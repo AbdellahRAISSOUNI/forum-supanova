@@ -12,6 +12,7 @@ Welcome to the comprehensive documentation for the Forum des Entreprises project
 - **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Deployment guides for various platforms and environments
 - **[TROUBLESHOOTING.md](./TROUBLESHOOTING.md)** - Common issues, solutions, and debugging techniques
 - **[CHANGELOG.md](./CHANGELOG.md)** - Version history, changes, and release notes
+- **[REALTIME_FEATURES.md](./REALTIME_FEATURES.md)** - Real-time features, notifications, and auto-refresh system
 
 ## 🚀 Quick Start
 

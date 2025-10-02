@@ -7,9 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Real-time Position Updates and Visual Notifications**
+  - React Query integration for efficient data fetching and auto-refresh
+  - React Hot Toast notification system with blue theme
+  - Student queue page auto-refresh every 5 seconds
+  - Committee dashboard auto-refresh every 3 seconds
+  - Position change notifications with toast alerts
+  - Visual position banners for upcoming turns
+  - Color-coded position badges (Green=1, Yellow=2-3, Blue=4+)
+  - Wait time estimates based on position and average duration
+  - Progress bars with dynamic colors based on status
+  - Enhanced student dashboard with statistics and activity feed
+  - Sound notifications for committee members (optional)
+  - Real-time timer for current interviews
+  - Notification provider wrapper for entire application
+
 ### Planned
 - Job posting and application system
-- Real-time notifications
 - Advanced search and filtering
 - File upload for resumes and documents
 - Email notifications

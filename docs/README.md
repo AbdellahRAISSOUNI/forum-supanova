@@ -13,6 +13,9 @@ A comprehensive forum platform for connecting students with companies, built wit
 - **Authentication**: NextAuth.js with JWT sessions
 - **Validation**: Zod schemas
 - **Styling**: Tailwind CSS with custom blue theme (#2880CA)
+- **Real-time Updates**: React Query with auto-refresh
+- **Notifications**: React Hot Toast for user feedback
+- **State Management**: React Query for server state
 
 ### Project Structure
 ```
@@ -48,6 +51,9 @@ forum-supanova/
    - Can browse companies and join interview queues
    - Can view and manage their queue positions
    - Priority-based queue positioning
+   - Real-time position updates with visual notifications
+   - Position banners for upcoming turns
+   - Enhanced dashboard with statistics and activity feed
 
 2. **Committee** (`committee`)
    - Manages student accounts and company partnerships
@@ -56,6 +62,8 @@ forum-supanova/
    - Higher priority in interview queues
    - Manages interview queues for assigned rooms
    - Can start/end interviews and manage queue positions
+   - Receives real-time notifications for queue changes
+   - Auto-refreshing dashboard with live updates
 
 3. **Admin** (`admin`)
    - Full system access and configuration
@@ -118,6 +126,30 @@ interface IInterview {
   updatedAt: Date;
 }
 ```
+
+## 🔄 Real-time Features
+
+### Student Experience
+- **Auto-refresh**: Queue positions update every 5 seconds
+- **Position Notifications**: Toast alerts when position improves
+- **Visual Banners**: 
+  - Position ≤ 3: Yellow "Your turn is coming soon!"
+  - Position = 1: Green "You're next!" with pulsing animation
+- **Position Badges**: Color-coded (Green=1, Yellow=2-3, Blue=4+)
+- **Wait Time Estimates**: Real-time calculations based on position
+- **Progress Bars**: Visual progress indicators
+
+### Committee Experience
+- **Auto-refresh**: Dashboard updates every 3 seconds
+- **Queue Notifications**: Alerts for students joining/leaving
+- **Interview Timer**: Live countdown for current interviews
+- **Sound Notifications**: Optional audio alerts for next student ready
+
+### Enhanced Dashboard
+- **Statistics Cards**: Total queues, active interviews, completed today
+- **Recent Activity Feed**: Last 5 activities with timestamps
+- **Quick Access**: Direct links to companies and queues
+- **Real-time Updates**: All data refreshes automatically
 
 ## 🚀 Getting Started
 
@@ -191,6 +223,8 @@ NEXTAUTH_SECRET=your-secret-key-here
 - `POST /api/student/queue/join` - Join a company queue
 - `GET /api/student/queues` - Get student's active queues
 - `DELETE /api/student/queue/[interviewId]` - Leave a queue
+- `GET /api/student/stats` - Get student statistics
+- `GET /api/student/activity` - Get recent activity feed
 
 ### Committee Management (Admin)
 - `GET /api/admin/committee` - List all committee members

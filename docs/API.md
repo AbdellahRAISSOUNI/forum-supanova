@@ -225,6 +225,27 @@ CORS is handled by Next.js. For production, configure appropriate CORS policies.
 4. **SQL Injection**: Protected by Mongoose ODM
 5. **XSS Protection**: Input sanitization and output encoding
 
+## Real-time Features
+
+### Auto-refresh Intervals
+- **Student Queue Page**: 5 seconds
+- **Committee Dashboard**: 3 seconds
+- **Student Dashboard**: On demand
+
+### Notification Types
+- **Position Changes**: Toast notifications when queue position improves
+- **Queue Updates**: Alerts for students joining/leaving queues
+- **Interview Status**: Real-time updates for interview progress
+- **Position Banners**: Visual alerts for upcoming turns
+
+### Visual Indicators
+- **Position Badges**: Color-coded based on position
+  - Green: Position 1 (with pulse animation)
+  - Yellow: Positions 2-3
+  - Blue: Position 4+
+- **Progress Bars**: Dynamic colors based on status
+- **Wait Time Estimates**: Calculated as `(position - 1) × averageDuration`
+
 ## Testing
 
 ### Manual Testing

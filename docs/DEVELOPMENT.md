@@ -40,6 +40,28 @@ npm run seed:admin
 npm run dev
 ```
 
+## Real-time Features
+
+### Notification System
+- **React Hot Toast**: User feedback notifications
+- **Position Change Alerts**: Toast notifications when queue position improves
+- **Queue Update Notifications**: Alerts for students joining/leaving queues
+- **Visual Position Banners**: Color-coded banners for upcoming turns
+- **Sound Notifications**: Optional audio alerts for committee members
+
+### Auto-refresh System
+- **React Query**: Efficient data fetching and caching
+- **Student Queue Page**: 5-second auto-refresh intervals
+- **Committee Dashboard**: 3-second auto-refresh intervals
+- **Background Updates**: No page refresh required
+- **Optimistic Updates**: Immediate UI feedback
+
+### Visual Indicators
+- **Position Badges**: Color-coded based on position (Green=1, Yellow=2-3, Blue=4+)
+- **Progress Bars**: Dynamic colors based on interview status
+- **Wait Time Estimates**: Real-time calculations
+- **Status Indicators**: Clear visual feedback for all states
+
 ## Project Structure
 
 ```
@@ -57,10 +79,14 @@ src/
 │   ├── layout.tsx         # Root layout
 │   └── page.tsx           # Homepage
 ├── components/            # Reusable components
-│   └── SessionProvider.tsx
+│   ├── SessionProvider.tsx
+│   └── providers/         # React context providers
+│       └── NotificationProvider.tsx
 ├── lib/                   # Utility libraries
 │   ├── auth.ts            # NextAuth configuration
 │   ├── db.ts              # Database connection
+│   └── services/          # Business logic services
+│       └── queueService.ts
 │   └── models/            # Mongoose models
 │       └── User.ts        # User model
 └── types/                 # TypeScript definitions
@@ -604,6 +630,37 @@ export default class ErrorBoundary extends Component<Props, State> {
 }
 ```
 
+## Testing Real-time Features
+
+### Manual Testing Checklist
+
+#### Student Queue Page
+- [ ] Auto-refresh every 5 seconds
+- [ ] Position change notifications appear
+- [ ] Position banners show correctly (≤3 yellow, =1 green)
+- [ ] Position badges are color-coded
+- [ ] Wait time estimates are accurate
+- [ ] Progress bars update dynamically
+
+#### Committee Dashboard
+- [ ] Auto-refresh every 3 seconds
+- [ ] Queue change notifications appear
+- [ ] Interview timer works correctly
+- [ ] Sound notifications work (if enabled)
+- [ ] Queue updates in real-time
+
+#### Student Dashboard
+- [ ] Statistics cards show correct data
+- [ ] Recent activity feed updates
+- [ ] Quick access buttons work
+- [ ] Real-time updates function properly
+
+### Performance Testing
+- [ ] No memory leaks with auto-refresh
+- [ ] Efficient API calls with React Query
+- [ ] Smooth animations and transitions
+- [ ] Responsive design on all devices
+
 ## Code Review Guidelines
 
 ### Review Checklist
@@ -618,6 +675,9 @@ export default class ErrorBoundary extends Component<Props, State> {
 - [ ] Code is properly formatted
 - [ ] No console.log statements in production code
 - [ ] Environment variables are properly used
+- [ ] Real-time features are properly implemented
+- [ ] Notification system works correctly
+- [ ] Auto-refresh intervals are appropriate
 
 ### Review Process
 

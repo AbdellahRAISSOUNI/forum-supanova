@@ -137,10 +137,22 @@ export async function joinQueue(
 
     await newInterview.save();
 
+    // Reorder the queue after adding the new student
+    const reorderResult = await reorderQueue(companyId);
+    
+    if (!reorderResult.success) {
+      console.error('Failed to reorder queue:', reorderResult.message);
+      // Still return success for the join operation, but log the reorder failure
+    }
+
+    // Get the updated position after reordering
+    const updatedInterview = await Interview.findById(newInterview._id);
+    const finalPosition = updatedInterview?.queuePosition || queueCount + 1;
+
     return {
       success: true,
       message: 'Vous avez rejoint la file d\'attente avec succès',
-      position: queueCount + 1,
+      position: finalPosition,
       interviewId: newInterview._id.toString()
     };
 
@@ -221,8 +233,13 @@ export async function leaveQueue(interviewId: string, studentId: string): Promis
       updatedAt: new Date()
     });
 
-    // Recalculate positions for remaining queue members
-    await recalculateQueuePositions(interview.companyId.toString());
+    // Reorder the queue after leaving
+    const reorderResult = await reorderQueue(interview.companyId.toString());
+    
+    if (!reorderResult.success) {
+      console.error('Failed to reorder queue after leaving:', reorderResult.message);
+      // Still return success for the leave operation, but log the reorder failure
+    }
 
     return {
       success: true,
@@ -482,8 +499,13 @@ export async function endInterview(interviewId: string, committeeUserId: string)
       updatedAt: new Date()
     });
 
-    // Recalculate queue positions for this company
-    await recalculateQueuePositions(interview.companyId._id.toString());
+    // Reorder the queue after ending the interview
+    const reorderResult = await reorderQueue(interview.companyId._id.toString());
+    
+    if (!reorderResult.success) {
+      console.error('Failed to reorder queue after ending interview:', reorderResult.message);
+      // Still return success for the end operation, but log the reorder failure
+    }
 
     return {
       success: true,
@@ -494,6 +516,142 @@ export async function endInterview(interviewId: string, committeeUserId: string)
     return {
       success: false,
       message: 'Erreur interne du serveur'
+    };
+  }
+}
+
+/**
+ * Reorder queue based on intelligent priority rules
+ */
+export async function reorderQueue(companyId: string): Promise<{
+  success: boolean;
+  message: string;
+  reorderedQueue?: any[];
+}> {
+  try {
+    await connectDB();
+
+    if (!mongoose.Types.ObjectId.isValid(companyId)) {
+      return {
+        success: false,
+        message: 'ID d\'entreprise invalide'
+      };
+    }
+
+    // Get all waiting interviews for the company
+    const waitingInterviews = await Interview.find({
+      companyId,
+      status: 'waiting'
+    })
+    .populate('studentId', 'firstName name studentStatus role')
+    .sort({ joinedAt: 1 }); // Sort by joinedAt first for initial ordering
+
+    if (waitingInterviews.length === 0) {
+      return {
+        success: true,
+        message: 'Aucune file d\'attente à réorganiser',
+        reorderedQueue: []
+      };
+    }
+
+    // Group interviews by priority category
+    const committeeInterviews = waitingInterviews.filter((interview: any) => 
+      interview.studentId.role === 'committee'
+    );
+    const ensaInterviews = waitingInterviews.filter((interview: any) => 
+      interview.studentId.role === 'student' && interview.studentId.studentStatus === 'ensa'
+    );
+    const externalInterviews = waitingInterviews.filter((interview: any) => 
+      interview.studentId.role === 'student' && interview.studentId.studentStatus === 'external'
+    );
+
+    // Sort each group by opportunity type priority, then by joinedAt
+    const sortByPriority = (interviews: any[]) => {
+      return interviews.sort((a, b) => {
+        // First sort by opportunity type priority
+        const opportunityPriority = {
+          'pfa': 1,
+          'pfe': 1,
+          'employment': 2,
+          'observation': 3
+        };
+        
+        const aPriority = opportunityPriority[a.opportunityType] || 4;
+        const bPriority = opportunityPriority[b.opportunityType] || 4;
+        
+        if (aPriority !== bPriority) {
+          return aPriority - bPriority;
+        }
+        
+        // Then sort by joinedAt (earlier = higher priority)
+        return new Date(a.joinedAt).getTime() - new Date(b.joinedAt).getTime();
+      });
+    };
+
+    const sortedCommittee = sortByPriority(committeeInterviews);
+    const sortedEnsa = sortByPriority(ensaInterviews);
+    const sortedExternal = sortByPriority(externalInterviews);
+
+    // Apply alternating pattern: 3 committee, 2 external, 2 ensa, repeat
+    const reorderedInterviews: any[] = [];
+    
+    let committeeIndex = 0;
+    let ensaIndex = 0;
+    let externalIndex = 0;
+
+    while (committeeIndex < sortedCommittee.length || 
+           ensaIndex < sortedEnsa.length || 
+           externalIndex < sortedExternal.length) {
+      
+      // Add 3 committee members (if available)
+      for (let i = 0; i < 3 && committeeIndex < sortedCommittee.length; i++) {
+        reorderedInterviews.push(sortedCommittee[committeeIndex]);
+        committeeIndex++;
+      }
+      
+      // Add 2 external students (if available)
+      for (let i = 0; i < 2 && externalIndex < sortedExternal.length; i++) {
+        reorderedInterviews.push(sortedExternal[externalIndex]);
+        externalIndex++;
+      }
+      
+      // Add 2 ENSA students (if available)
+      for (let i = 0; i < 2 && ensaIndex < sortedEnsa.length; i++) {
+        reorderedInterviews.push(sortedEnsa[ensaIndex]);
+        ensaIndex++;
+      }
+    }
+
+    // Update queue positions in database
+    for (let i = 0; i < reorderedInterviews.length; i++) {
+      await Interview.findByIdAndUpdate(reorderedInterviews[i]._id, {
+        queuePosition: i + 1,
+        updatedAt: new Date()
+      });
+    }
+
+    // Format the reordered queue for response
+    const reorderedQueue = reorderedInterviews.map((interview: any, index: number) => ({
+      interviewId: interview._id.toString(),
+      studentName: `${interview.studentId.firstName} ${interview.studentId.name}`,
+      studentStatus: interview.studentId.studentStatus,
+      role: interview.studentId.role,
+      position: index + 1,
+      opportunityType: interview.opportunityType,
+      joinedAt: interview.joinedAt,
+      priorityScore: interview.priorityScore,
+    }));
+
+    return {
+      success: true,
+      message: 'File d\'attente réorganisée avec succès',
+      reorderedQueue
+    };
+  } catch (error) {
+    console.error('Error reordering queue:', error);
+    return {
+      success: false,
+      message: 'Erreur lors de la réorganisation de la file d\'attente'
     };
   }
 }
@@ -524,21 +682,21 @@ export async function getQueueForRoom(room: string): Promise<{
     })
     .populate('studentId', 'firstName name studentStatus role');
 
-    // Get waiting interviews
+    // Get waiting interviews (now ordered by queuePosition after reordering)
     const waitingInterviews = await Interview.find({
       companyId: company._id,
       status: 'waiting'
     })
     .populate('studentId', 'firstName name studentStatus role')
-    .sort({ priorityScore: 1, joinedAt: 1 });
+    .sort({ queuePosition: 1 });
 
     // Format waiting queue
-    const waitingQueue = waitingInterviews.map((interview: any, index: number) => ({
+    const waitingQueue = waitingInterviews.map((interview: any) => ({
       interviewId: interview._id.toString(),
       studentName: `${interview.studentId.firstName} ${interview.studentId.name}`,
       studentStatus: interview.studentId.studentStatus,
       role: interview.studentId.role,
-      position: index + 1,
+      position: interview.queuePosition,
       opportunityType: interview.opportunityType,
       joinedAt: interview.joinedAt,
       priorityScore: interview.priorityScore,

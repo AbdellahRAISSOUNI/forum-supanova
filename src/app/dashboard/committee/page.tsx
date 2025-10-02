@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 
 interface QueueData {
   company: {
@@ -45,11 +47,26 @@ interface QueueData {
 export default function CommitteeDashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [queueData, setQueueData] = useState<QueueData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0);
+  const [previousQueueSize, setPreviousQueueSize] = useState(0);
+  const [previousWaitingQueue, setPreviousWaitingQueue] = useState<string[]>([]);
+
+  // React Query for real-time updates
+  const { data: queueData, isLoading, refetch } = useQuery({
+    queryKey: ['committee-queue'],
+    queryFn: async () => {
+      const response = await fetch('/api/committee/queue');
+      if (!response.ok) {
+        throw new Error('Erreur lors du chargement de la file d\'attente');
+      }
+      const data = await response.json();
+      return data.queueData;
+    },
+    refetchInterval: 3000, // Refetch every 3 seconds
+    enabled: !!session && session.user.role === 'committee',
+  });
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -63,20 +80,7 @@ export default function CommitteeDashboard() {
       router.push('/');
       return;
     }
-
-    fetchQueueData();
   }, [session, status, router]);
-
-  // Auto-refresh every 5 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (session?.user.role === 'committee') {
-        fetchQueueData();
-      }
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, [session]);
 
   // Timer for current interview
   useEffect(() => {
@@ -95,21 +99,39 @@ export default function CommitteeDashboard() {
     }
   }, [queueData?.currentInterview]);
 
-  const fetchQueueData = async () => {
-    try {
-      const response = await fetch('/api/committee/queue');
-      if (response.ok) {
-        const data = await response.json();
-        setQueueData(data.queueData);
-      } else {
-        setMessage({ type: 'error', text: 'Erreur lors du chargement de la file d\'attente' });
-      }
-    } catch (error) {
-      setMessage({ type: 'error', text: 'Erreur de connexion au serveur' });
-    } finally {
-      setIsLoading(false);
+  // Track queue changes and show notifications
+  useEffect(() => {
+    if (!queueData) return;
+
+    const currentQueueSize = queueData.totalWaiting;
+    const currentWaitingQueue = queueData.waitingQueue.map((student: any) => student.interviewId);
+
+    // Check for new students joining
+    if (previousQueueSize > 0 && currentQueueSize > previousQueueSize) {
+      toast.success(`Nouvel étudiant dans la file d'attente ! Total: ${currentQueueSize}`);
     }
-  };
+
+    // Check for students leaving
+    if (previousQueueSize > 0 && currentQueueSize < previousQueueSize) {
+      toast.info(`Étudiant sorti de la file d'attente. Total: ${currentQueueSize}`);
+    }
+
+    // Check for next student ready
+    if (queueData.nextUp && !queueData.currentInterview) {
+      const isNewNextUp = !previousWaitingQueue.includes(queueData.nextUp.interviewId);
+      if (isNewNextUp && previousWaitingQueue.length > 0) {
+        toast.success(`Nouvel étudiant prêt ! ${queueData.nextUp.studentName}`, {
+          duration: 6000,
+        });
+        // Optional: Play sound notification
+        // const audio = new Audio('/notification.mp3');
+        // audio.play().catch(() => {}); // Ignore errors if audio fails
+      }
+    }
+
+    setPreviousQueueSize(currentQueueSize);
+    setPreviousWaitingQueue(currentWaitingQueue);
+  }, [queueData, previousQueueSize, previousWaitingQueue]);
 
   const startInterview = async (interviewId: string) => {
     setIsActionLoading(true);
@@ -127,13 +149,13 @@ export default function CommitteeDashboard() {
       const data = await response.json();
 
       if (response.ok) {
-        setMessage({ type: 'success', text: data.message });
-        fetchQueueData(); // Refresh queue data
+        toast.success(data.message);
+        refetch(); // Refresh queue data
       } else {
-        setMessage({ type: 'error', text: data.error || 'Erreur lors du démarrage de l\'entretien' });
+        toast.error(data.error || 'Erreur lors du démarrage de l\'entretien');
       }
     } catch (error) {
-      setMessage({ type: 'error', text: 'Erreur de connexion au serveur' });
+      toast.error('Erreur de connexion au serveur');
     } finally {
       setIsActionLoading(false);
     }
@@ -155,13 +177,13 @@ export default function CommitteeDashboard() {
       const data = await response.json();
 
       if (response.ok) {
-        setMessage({ type: 'success', text: data.message });
-        fetchQueueData(); // Refresh queue data
+        toast.success(data.message);
+        refetch(); // Refresh queue data
       } else {
-        setMessage({ type: 'error', text: data.error || 'Erreur lors de la fin de l\'entretien' });
+        toast.error(data.error || 'Erreur lors de la fin de l\'entretien');
       }
     } catch (error) {
-      setMessage({ type: 'error', text: 'Erreur de connexion au serveur' });
+      toast.error('Erreur de connexion au serveur');
     } finally {
       setIsActionLoading(false);
     }
@@ -180,6 +202,20 @@ export default function CommitteeDashboard() {
       return <span className="px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded-full">ENSA</span>;
     } else {
       return <span className="px-2 py-1 text-xs font-semibold bg-gray-100 text-gray-800 rounded-full">Externe</span>;
+    }
+  };
+
+  const getOpportunityTypeBadge = (type: string) => {
+    switch (type) {
+      case 'pfa':
+      case 'pfe':
+        return <span className="px-2 py-1 text-xs font-semibold bg-green-100 text-green-800 rounded-full">PFA/PFE</span>;
+      case 'employment':
+        return <span className="px-2 py-1 text-xs font-semibold bg-yellow-100 text-yellow-800 rounded-full">Emploi</span>;
+      case 'observation':
+        return <span className="px-2 py-1 text-xs font-semibold bg-orange-100 text-orange-800 rounded-full">Observation</span>;
+      default:
+        return <span className="px-2 py-1 text-xs font-semibold bg-gray-100 text-gray-800 rounded-full">{type}</span>;
     }
   };
 
@@ -255,14 +291,16 @@ export default function CommitteeDashboard() {
                     <h3 className="text-xl font-semibold text-gray-900 mb-2">
                       {queueData.currentInterview.studentName}
                     </h3>
-                    <div className="space-y-2">
-                      <p className="text-gray-600">
-                        <span className="font-medium">Type:</span> {getOpportunityTypeText(queueData.currentInterview.opportunityType)}
-                      </p>
-                      <p className="text-gray-600">
-                        <span className="font-medium">Statut:</span> {getPriorityBadge(queueData.currentInterview.role, queueData.currentInterview.studentStatus)}
-                      </p>
-                    </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-gray-600 font-medium">Type:</span>
+                          {getOpportunityTypeBadge(queueData.currentInterview.opportunityType)}
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-gray-600 font-medium">Statut:</span>
+                          {getPriorityBadge(queueData.currentInterview.role, queueData.currentInterview.studentStatus)}
+                        </div>
+                      </div>
                   </div>
                   <div className="text-center">
                     <div className="text-4xl font-mono font-bold text-green-600 mb-4">
@@ -293,12 +331,14 @@ export default function CommitteeDashboard() {
                       <p className="text-gray-600">
                         <span className="font-medium">Position:</span> #{queueData.nextUp.position}
                       </p>
-                      <p className="text-gray-600">
-                        <span className="font-medium">Type:</span> {getOpportunityTypeText(queueData.nextUp.opportunityType)}
-                      </p>
-                      <p className="text-gray-600">
-                        <span className="font-medium">Statut:</span> {getPriorityBadge(queueData.nextUp.role, queueData.nextUp.studentStatus)}
-                      </p>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-gray-600 font-medium">Type:</span>
+                        {getOpportunityTypeBadge(queueData.nextUp.opportunityType)}
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-gray-600 font-medium">Statut:</span>
+                        {getPriorityBadge(queueData.nextUp.role, queueData.nextUp.studentStatus)}
+                      </div>
                     </div>
                   </div>
                   <div className="flex items-center justify-center">
@@ -316,7 +356,12 @@ export default function CommitteeDashboard() {
 
             {/* Waiting Queue Section */}
             <div className="bg-white rounded-lg shadow-md p-8">
-              <h2 className="text-2xl font-bold text-gray-800 mb-6">File d'Attente</h2>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-800">File d'Attente</h2>
+                <div className="text-sm text-gray-600 bg-blue-50 px-3 py-2 rounded-lg">
+                  <span className="font-medium">Système intelligent :</span> 3 Comité → 2 Externes → 2 ENSA
+                </div>
+              </div>
               
               {queueData.waitingQueue.length === 0 ? (
                 <p className="text-gray-600 text-center py-8">Aucun étudiant en attente</p>
@@ -331,9 +376,7 @@ export default function CommitteeDashboard() {
                         <div>
                           <h4 className="font-semibold text-gray-900">{student.studentName}</h4>
                           <div className="flex items-center space-x-2 mt-1">
-                            <span className="text-sm text-gray-600">
-                              {getOpportunityTypeText(student.opportunityType)}
-                            </span>
+                            {getOpportunityTypeBadge(student.opportunityType)}
                             {getPriorityBadge(student.role, student.studentStatus)}
                           </div>
                         </div>

@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 
 interface Queue {
   _id: string;
@@ -20,10 +22,25 @@ export default function StudentQueuesPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   
-  const [queues, setQueues] = useState<Queue[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [leavingQueueId, setLeavingQueueId] = useState<string | null>(null);
+  const [previousPositions, setPreviousPositions] = useState<Record<string, number>>({});
+  const [showPositionBanner, setShowPositionBanner] = useState<{ queueId: string; position: number; room: string } | null>(null);
+
+  // React Query for real-time updates
+  const { data: queues = [], isLoading, refetch } = useQuery({
+    queryKey: ['student-queues'],
+    queryFn: async () => {
+      const response = await fetch('/api/student/queues');
+      if (!response.ok) {
+        throw new Error('Erreur lors du chargement des files d\'attente');
+      }
+      const data = await response.json();
+      return data.queues;
+    },
+    refetchInterval: 5000, // Refetch every 5 seconds
+    enabled: !!session && session.user.role === 'student',
+  });
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -37,29 +54,38 @@ export default function StudentQueuesPage() {
       router.push('/');
       return;
     }
-
-    fetchQueues();
-    
-    // Auto-refresh every 10 seconds
-    const interval = setInterval(fetchQueues, 10000);
-    return () => clearInterval(interval);
   }, [session, status, router]);
 
-  const fetchQueues = async () => {
-    try {
-      const response = await fetch('/api/student/queues');
-      if (response.ok) {
-        const data = await response.json();
-        setQueues(data.queues);
-      } else {
-        setMessage({ type: 'error', text: 'Erreur lors du chargement des files d\'attente' });
+  // Track position changes and show notifications
+  useEffect(() => {
+    if (queues.length === 0) return;
+
+    queues.forEach((queue: Queue) => {
+      const previousPosition = previousPositions[queue._id];
+      
+      if (previousPosition && previousPosition !== queue.position) {
+        if (queue.position < previousPosition) {
+          toast.success(`Vous avez avancé ! Maintenant position #${queue.position}`);
+        }
       }
-    } catch (error) {
-      setMessage({ type: 'error', text: 'Erreur de connexion au serveur' });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+
+      // Update position banner based on current position
+      if (queue.position === 1 && queue.status === 'waiting') {
+        setShowPositionBanner({ queueId: queue._id, position: queue.position, room: queue.room });
+      } else if (queue.position <= 3 && queue.status === 'waiting') {
+        setShowPositionBanner({ queueId: queue._id, position: queue.position, room: queue.room });
+      } else {
+        setShowPositionBanner(null);
+      }
+    });
+
+    // Update previous positions
+    const newPreviousPositions: Record<string, number> = {};
+    queues.forEach((queue: Queue) => {
+      newPreviousPositions[queue._id] = queue.position;
+    });
+    setPreviousPositions(newPreviousPositions);
+  }, [queues, previousPositions]);
 
   const handleLeaveQueue = async (queueId: string) => {
     setLeavingQueueId(queueId);
@@ -73,13 +99,13 @@ export default function StudentQueuesPage() {
       const data = await response.json();
 
       if (response.ok) {
-        setMessage({ type: 'success', text: data.message });
-        fetchQueues(); // Refresh the queues list
+        toast.success(data.message);
+        refetch(); // Refresh the queues list
       } else {
-        setMessage({ type: 'error', text: data.error || 'Erreur lors de la sortie de la file' });
+        toast.error(data.error || 'Erreur lors de la sortie de la file');
       }
     } catch (error) {
-      setMessage({ type: 'error', text: 'Erreur de connexion au serveur' });
+      toast.error('Erreur de connexion au serveur');
     } finally {
       setLeavingQueueId(null);
     }
@@ -92,6 +118,16 @@ export default function StudentQueuesPage() {
       case 'employment': return 'Emploi';
       case 'observation': return 'Stage d\'observation';
       default: return type;
+    }
+  };
+
+  const getPriorityBadge = (role: string, studentStatus: string) => {
+    if (role === 'committee') {
+      return <span className="px-2 py-1 text-xs font-semibold bg-purple-100 text-purple-800 rounded-full">Comité</span>;
+    } else if (studentStatus === 'ensa') {
+      return <span className="px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded-full">ENSA</span>;
+    } else {
+      return <span className="px-2 py-1 text-xs font-semibold bg-gray-100 text-gray-800 rounded-full">Externe</span>;
     }
   };
 
@@ -118,6 +154,16 @@ export default function StudentQueuesPage() {
   const calculateProgress = (position: number, totalInQueue: number) => {
     if (totalInQueue === 0) return 100;
     return Math.max(0, Math.min(100, ((totalInQueue - position + 1) / totalInQueue) * 100));
+  };
+
+  const getPositionBadgeColor = (position: number) => {
+    if (position === 1) return 'bg-green-500 text-white animate-pulse';
+    if (position <= 3) return 'bg-yellow-500 text-white';
+    return 'bg-blue-500 text-white';
+  };
+
+  const getEstimatedWaitTime = (position: number, estimatedDuration: number) => {
+    return Math.max(0, (position - 1) * estimatedDuration);
   };
 
   if (status === 'loading') {
@@ -155,6 +201,40 @@ export default function StudentQueuesPage() {
 
       {/* Main Content */}
       <main className="max-w-6xl mx-auto py-8 px-4 sm:px-8">
+        {/* Position Banner */}
+        {showPositionBanner && (
+          <div className={`mb-6 p-4 rounded-lg border-2 ${
+            showPositionBanner.position === 1 
+              ? 'bg-green-50 border-green-200 text-green-800 animate-pulse'
+              : 'bg-yellow-50 border-yellow-200 text-yellow-800'
+          }`}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${
+                  showPositionBanner.position === 1 ? 'bg-green-500 text-white' : 'bg-yellow-500 text-white'
+                }`}>
+                  #{showPositionBanner.position}
+                </div>
+                <div>
+                  {showPositionBanner.position === 1 ? (
+                    <p className="font-semibold text-lg">Vous êtes le prochain ! Direction Salle {showPositionBanner.room}</p>
+                  ) : (
+                    <p className="font-semibold text-lg">Votre tour arrive bientôt ! Position #{showPositionBanner.position}</p>
+                  )}
+                </div>
+              </div>
+              {showPositionBanner.position > 3 && (
+                <button
+                  onClick={() => setShowPositionBanner(null)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Message Display */}
         {message && (
           <div className={`mb-6 p-4 rounded-md ${
@@ -222,6 +302,7 @@ export default function StudentQueuesPage() {
                         </svg>
                         {getOpportunityTypeLabel(queue.opportunityType)}
                       </span>
+                      {getPriorityBadge(session.user.role, session.user.studentStatus || 'external')}
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -246,7 +327,9 @@ export default function StudentQueuesPage() {
                           VOTRE TOUR !
                         </span>
                       )}
-                      <span className="text-lg font-bold text-[#2880CA]">#{queue.position}</span>
+                      <span className={`px-3 py-1 text-sm font-bold rounded-full ${getPositionBadgeColor(queue.position)}`}>
+                        #{queue.position}
+                      </span>
                     </div>
                   </div>
                   
@@ -264,14 +347,19 @@ export default function StudentQueuesPage() {
                     ></div>
                   </div>
                   
-                  <p className="text-xs text-gray-500 mt-1">
-                    Rejoint le {new Date(queue.joinedAt).toLocaleDateString('fr-FR', {
-                      day: 'numeric',
-                      month: 'long',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
-                  </p>
+                  <div className="flex justify-between items-center mt-2">
+                    <p className="text-xs text-gray-500">
+                      Rejoint le {new Date(queue.joinedAt).toLocaleDateString('fr-FR', {
+                        day: 'numeric',
+                        month: 'long',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </p>
+                    <p className="text-xs text-gray-600 font-medium">
+                      Temps d'attente estimé: {getEstimatedWaitTime(queue.position, queue.estimatedDuration)} min
+                    </p>
+                  </div>
                 </div>
 
                 {/* Action Button */}
@@ -295,11 +383,59 @@ export default function StudentQueuesPage() {
           </div>
         )}
 
+        {/* Priority System Legend */}
+        {queues.length > 0 && (
+          <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-blue-800 mb-4">Système de Priorité</h3>
+            <div className="grid md:grid-cols-2 gap-4 text-sm">
+              <div>
+                <h4 className="font-medium text-blue-700 mb-2">Catégories de Priorité</h4>
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <span className="px-2 py-1 text-xs font-semibold bg-purple-100 text-purple-800 rounded-full">Comité</span>
+                    <span className="text-gray-600">Priorité la plus élevée</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded-full">ENSA</span>
+                    <span className="text-gray-600">Étudiants ENSA</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="px-2 py-1 text-xs font-semibold bg-gray-100 text-gray-800 rounded-full">Externe</span>
+                    <span className="text-gray-600">Étudiants externes</span>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <h4 className="font-medium text-blue-700 mb-2">Types d'Opportunité</h4>
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-gray-600">PFA/PFE</span>
+                    <span className="text-green-600 font-medium">Priorité 1</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-gray-600">Emploi</span>
+                    <span className="text-yellow-600 font-medium">Priorité 2</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-gray-600">Stage d'observation</span>
+                    <span className="text-orange-600 font-medium">Priorité 3</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="mt-4 p-3 bg-blue-100 rounded-lg">
+              <p className="text-sm text-blue-800">
+                <strong>Pattern d'alternance :</strong> 3 Comité → 2 Externes → 2 ENSA → répéter
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Auto-refresh indicator */}
         {queues.length > 0 && (
           <div className="mt-8 text-center">
             <p className="text-sm text-gray-500">
-              🔄 Mise à jour automatique toutes les 10 secondes
+              🔄 Mise à jour automatique toutes les 5 secondes
             </p>
           </div>
         )}
