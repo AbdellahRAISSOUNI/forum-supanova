@@ -32,6 +32,8 @@ export default function AdminCompaniesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
+  const [showQueueModal, setShowQueueModal] = useState(false);
+  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
   const [formData, setFormData] = useState<CompanyFormData>({
     name: '',
     sector: '',
@@ -146,6 +148,11 @@ export default function AdminCompaniesPage() {
       estimatedInterviewDuration: company.estimatedInterviewDuration,
     });
     setIsModalOpen(true);
+  };
+
+  const handleViewQueue = (company: Company) => {
+    setSelectedCompany(company);
+    setShowQueueModal(true);
   };
 
   const handleToggleActive = async (company: Company) => {
@@ -296,9 +303,12 @@ export default function AdminCompaniesPage() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Statut
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          File d'Attente
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Actions
+                        </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -325,6 +335,14 @@ export default function AdminCompaniesPage() {
                         }`}>
                           {company.isActive ? 'Actif' : 'Inactif'}
                         </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <button
+                          onClick={() => handleViewQueue(company)}
+                          className="text-[#2880CA] hover:text-[#1e5f8a] text-sm font-medium"
+                        >
+                          Voir la File
+                        </button>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                         <button
@@ -476,6 +494,43 @@ export default function AdminCompaniesPage() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Queue Modal */}
+      {showQueueModal && selectedCompany && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
+            <div className="flex justify-between items-center p-6 border-b">
+              <h2 className="text-xl font-semibold text-gray-800">
+                File d'Attente - {selectedCompany.name}
+              </h2>
+              <button
+                onClick={() => setShowQueueModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="p-6">
+              <div className="text-center py-8">
+                <p className="text-gray-600">Fonctionnalité de visualisation de file d'attente en cours de développement.</p>
+                <p className="text-sm text-gray-500 mt-2">Utilisez le tableau de bord principal pour voir toutes les files d'attente.</p>
+              </div>
+            </div>
+            
+            <div className="flex justify-end space-x-3 p-6 border-t bg-gray-50">
+              <button
+                onClick={() => setShowQueueModal(false)}
+                className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Fermer
+              </button>
             </div>
           </div>
         </div>

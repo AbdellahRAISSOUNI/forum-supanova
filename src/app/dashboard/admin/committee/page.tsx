@@ -30,6 +30,7 @@ export default function AdminCommitteePage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<CommitteeMember | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [memberStatuses, setMemberStatuses] = useState<Record<string, { isActive: boolean; lastActivity?: string }>>({});
 
   // Form state
   const [formData, setFormData] = useState({
@@ -63,6 +64,27 @@ export default function AdminCommitteePage() {
       if (response.ok) {
         const data = await response.json();
         setCommitteeMembers(data.committeeMembers);
+        
+        // Fetch member statuses (active interviews)
+        const statusPromises = data.committeeMembers.map(async (member: CommitteeMember) => {
+          try {
+            const statusResponse = await fetch(`/api/admin/committee/${member._id}/status`);
+            if (statusResponse.ok) {
+              const statusData = await statusResponse.json();
+              return { memberId: member._id, status: statusData };
+            }
+          } catch (error) {
+            console.error(`Error fetching status for member ${member._id}:`, error);
+          }
+          return { memberId: member._id, status: { isActive: false } };
+        });
+        
+        const statuses = await Promise.all(statusPromises);
+        const statusMap: Record<string, { isActive: boolean; lastActivity?: string }> = {};
+        statuses.forEach(({ memberId, status }) => {
+          statusMap[memberId] = status;
+        });
+        setMemberStatuses(statusMap);
       } else {
         setMessage({ type: 'error', text: 'Erreur lors du chargement des membres du comité' });
       }
@@ -265,9 +287,12 @@ export default function AdminCommitteePage() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Salle Assignée
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Statut
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Actions
+                        </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -283,6 +308,31 @@ export default function AdminCommitteePage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">{member.assignedRoom}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {memberStatuses[member._id] ? (
+                          <div className="flex flex-col space-y-1">
+                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                              memberStatuses[member._id].isActive
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-gray-100 text-gray-800'
+                            }`}>
+                              {memberStatuses[member._id].isActive ? 'En entretien' : 'Disponible'}
+                            </span>
+                            {memberStatuses[member._id].lastActivity && (
+                              <span className="text-xs text-gray-500">
+                                {new Date(memberStatuses[member._id].lastActivity!).toLocaleDateString('fr-FR', {
+                                  day: 'numeric',
+                                  month: 'short',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-sm text-gray-500">Chargement...</span>
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <button
