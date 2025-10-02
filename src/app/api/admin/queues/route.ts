@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/db';
@@ -6,7 +6,7 @@ import Company from '@/lib/models/Company';
 import Interview from '@/lib/models/Interview';
 
 // GET - Get all queues overview for admin
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const session = await getServerSession(authOptions);
     
@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
         } : null;
 
         // Format next 3 in queue
-        const nextInQueue = waitingInterviews.slice(0, 3).map((interview: any) => ({
+        const nextInQueue = waitingInterviews.slice(0, 3).map((interview) => ({
           studentName: `${interview.studentId.firstName} ${interview.studentId.name}`,
           studentStatus: interview.studentId.studentStatus,
           role: interview.studentId.role,
@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
         }));
 
         // Format full queue for modal (all waiting interviews)
-        const fullQueue = waitingInterviews.map((interview: any) => ({
+        const fullQueue = waitingInterviews.map((interview) => ({
           studentName: `${interview.studentId.firstName} ${interview.studentId.name}`,
           studentStatus: interview.studentId.studentStatus,
           role: interview.studentId.role,

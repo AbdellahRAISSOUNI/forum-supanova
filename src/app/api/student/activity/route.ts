@@ -1,11 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/db';
 import Interview from '@/lib/models/Interview';
 
 // GET - Get recent student activity
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const session = await getServerSession(authOptions);
     
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     .limit(10)
     .select('status opportunityType joinedAt startedAt completedAt companyId queuePosition');
 
-    const activities = recentActivity.map((interview: any) => ({
+    const activities = recentActivity.map((interview) => ({
       id: interview._id.toString(),
       companyName: interview.companyId.name,
       room: interview.companyId.room,

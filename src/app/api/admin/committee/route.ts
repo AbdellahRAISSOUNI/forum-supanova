@@ -17,7 +17,7 @@ const committeeMemberSchema = z.object({
 });
 
 // GET - List all committee members
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const session = await getServerSession(authOptions);
     

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 interface FormData {
   firstName: string;
@@ -137,9 +138,9 @@ export default function RegisterPage() {
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
             Ou{' '}
-            <a href="/" className="font-medium text-[#2880CA] hover:text-[#1e5f8a]">
+            <Link href="/" className="font-medium text-[#2880CA] hover:text-[#1e5f8a]">
               retourner à l&apos;accueil
-            </a>
+            </Link>
           </p>
         </div>
 

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/db';
@@ -6,7 +6,7 @@ import User from '@/lib/models/User';
 import Interview from '@/lib/models/Interview';
 
 // GET - Get recent system activity
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const session = await getServerSession(authOptions);
     
@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     const activities = [];
 
     // Add registration events
-    recentRegistrations.forEach((user: any) => {
+    recentRegistrations.forEach((user) => {
       activities.push({
         id: `registration-${user._id}`,
         type: 'registration',
@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Add interview events
-    recentInterviews.forEach((interview: any) => {
+    recentInterviews.forEach((interview) => {
       let action = '';
       let description = '';
       let timestamp = interview.updatedAt;
