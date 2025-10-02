@@ -45,16 +45,20 @@ forum-supanova/
 1. **Student** (`student`)
    - Can register and access student dashboard
    - Has student status (ENSA/External) and opportunity type
-   - Can view job opportunities and manage applications
+   - Can browse companies and join interview queues
+   - Can view and manage their queue positions
+   - Priority-based queue positioning
 
 2. **Committee** (`committee`)
    - Manages student accounts and company partnerships
    - Can create and manage job offers
    - Has access to statistics and reporting
+   - Higher priority in interview queues
 
 3. **Admin** (`admin`)
    - Full system access and configuration
    - User management and system oversight
+   - Company management (add, edit, activate/deactivate)
    - Access to all administrative features
 
 ### Authentication Flow
@@ -75,6 +79,37 @@ interface IUser {
   role: 'student' | 'committee' | 'admin';
   studentStatus?: 'ensa' | 'external';  // For students only
   opportunityType?: 'pfa' | 'pfe' | 'employment' | 'observation';  // For students only
+  createdAt: Date;
+  updatedAt: Date;
+}
+```
+
+### Company Model (`src/lib/models/Company.ts`)
+```typescript
+interface ICompany {
+  name: string;                     // Company name, indexed
+  sector: string;                   // Business sector
+  website: string;                  // Company website URL
+  room: string;                     // Interview room location
+  estimatedInterviewDuration: number; // Interview duration in minutes
+  isActive: boolean;                // Active status
+  createdAt: Date;
+  updatedAt: Date;
+}
+```
+
+### Interview Model (`src/lib/models/Interview.ts`)
+```typescript
+interface IInterview {
+  studentId: ObjectId;              // Reference to User
+  companyId: ObjectId;              // Reference to Company
+  status: 'waiting' | 'in_progress' | 'completed' | 'cancelled';
+  queuePosition: number;            // Position in queue
+  priorityScore: number;            // Lower = higher priority
+  opportunityType: 'pfa' | 'pfe' | 'employment' | 'observation';
+  joinedAt: Date;                   // When joined queue
+  startedAt?: Date;                 // When interview started
+  completedAt?: Date;               // When interview completed
   createdAt: Date;
   updatedAt: Date;
 }
@@ -141,6 +176,18 @@ NEXTAUTH_SECRET=your-secret-key-here
 }
 ```
 
+### Company Management (Admin)
+- `GET /api/admin/companies` - List all companies
+- `POST /api/admin/companies` - Create new company
+- `PATCH /api/admin/companies/[id]` - Update company
+- `DELETE /api/admin/companies/[id]` - Soft delete company
+
+### Queue System (Student)
+- `GET /api/companies` - List companies with queue status
+- `POST /api/student/queue/join` - Join a company queue
+- `GET /api/student/queues` - Get student's active queues
+- `DELETE /api/student/queue/[interviewId]` - Leave a queue
+
 ## 🎨 UI Components
 
 ### Design System
@@ -154,8 +201,11 @@ NEXTAUTH_SECRET=your-secret-key-here
 2. **Registration** (`/register`) - Student registration form
 3. **Login** (`/login`) - Authentication form
 4. **Student Dashboard** (`/dashboard/student`) - Student-specific interface
-5. **Committee Dashboard** (`/dashboard/committee`) - Committee management interface
-6. **Admin Dashboard** (`/dashboard/admin`) - Administrative interface
+5. **Student Companies** (`/dashboard/student/companies`) - Browse companies and join queues
+6. **Student Queues** (`/dashboard/student/queues`) - View and manage queue positions
+7. **Committee Dashboard** (`/dashboard/committee`) - Committee management interface
+8. **Admin Dashboard** (`/dashboard/admin`) - Administrative interface
+9. **Admin Companies** (`/dashboard/admin/companies`) - Company management interface
 
 ## 🛡️ Security Features
 

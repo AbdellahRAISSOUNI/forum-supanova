@@ -274,24 +274,106 @@ Consider implementing:
 
 ## Future API Enhancements
 
+### Company Management Endpoints
+
+#### List Companies (Student)
+**GET** `/api/companies`
+
+Returns active companies with queue information for students.
+
+**Response** (Success):
+```json
+{
+  "companies": [
+    {
+      "_id": "company_id",
+      "name": "Capgemini",
+      "sector": "IT Services",
+      "website": "https://www.capgemini.com",
+      "room": "A1",
+      "estimatedInterviewDuration": 30,
+      "queueLength": 5,
+      "studentInQueue": {
+        "position": 3,
+        "status": "waiting"
+      }
+    }
+  ]
+}
+```
+
+#### Admin Company Management
+**GET** `/api/admin/companies` - List all companies (admin only)
+**POST** `/api/admin/companies` - Create new company (admin only)
+**PATCH** `/api/admin/companies/[id]` - Update company (admin only)
+**DELETE** `/api/admin/companies/[id]` - Soft delete company (admin only)
+
+### Queue System Endpoints
+
+#### Join Queue
+**POST** `/api/student/queue/join`
+
+**Request Body**:
+```json
+{
+  "companyId": "company_id",
+  "opportunityType": "pfe"
+}
+```
+
+**Response** (Success):
+```json
+{
+  "message": "Vous avez rejoint la file d'attente avec succès",
+  "position": 3,
+  "interviewId": "interview_id"
+}
+```
+
+#### Get Student Queues
+**GET** `/api/student/queues`
+
+**Response** (Success):
+```json
+{
+  "queues": [
+    {
+      "_id": "interview_id",
+      "companyName": "Capgemini",
+      "room": "A1",
+      "estimatedDuration": 30,
+      "position": 3,
+      "opportunityType": "pfe",
+      "status": "waiting",
+      "joinedAt": "2025-01-02T10:30:00Z"
+    }
+  ]
+}
+```
+
+#### Leave Queue
+**DELETE** `/api/student/queue/[interviewId]`
+
+**Response** (Success):
+```json
+{
+  "message": "Vous avez quitté la file d'attente avec succès"
+}
+```
+
 ### Planned Endpoints
 
-1. **Company Management**
-   - `POST /api/companies` - Create company profile
-   - `GET /api/companies` - List companies
-   - `PUT /api/companies/:id` - Update company
-
-2. **Job Postings**
+1. **Job Postings**
    - `POST /api/jobs` - Create job posting
    - `GET /api/jobs` - List job postings
    - `GET /api/jobs/:id` - Get job details
 
-3. **Applications**
+2. **Applications**
    - `POST /api/applications` - Submit application
    - `GET /api/applications` - List applications
    - `PUT /api/applications/:id` - Update application status
 
-4. **User Management**
+3. **User Management**
    - `GET /api/users` - List users (admin only)
    - `PUT /api/users/:id` - Update user profile
    - `DELETE /api/users/:id` - Delete user (admin only)

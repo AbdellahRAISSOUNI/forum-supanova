@@ -10,6 +10,7 @@ declare module "next-auth" {
       role: "student" | "committee" | "admin";
       studentStatus?: "ensa" | "external";
       opportunityType?: "pfa" | "pfe" | "employment" | "observation";
+      assignedRoom?: string;
     };
   }
 
@@ -21,6 +22,7 @@ declare module "next-auth" {
     role: "student" | "committee" | "admin";
     studentStatus?: "ensa" | "external";
     opportunityType?: "pfa" | "pfe" | "employment" | "observation";
+    assignedRoom?: string;
   }
 }
 
@@ -30,5 +32,6 @@ declare module "next-auth/jwt" {
     firstName?: string;
     studentStatus?: "ensa" | "external";
     opportunityType?: "pfa" | "pfe" | "employment" | "observation";
+    assignedRoom?: string;
   }
 }

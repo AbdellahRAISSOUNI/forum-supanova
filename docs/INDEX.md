@@ -55,7 +55,10 @@ The Forum des Entreprises is a comprehensive web application built with Next.js 
 - **User Authentication**: Secure login/registration with NextAuth.js
 - **Role-Based Access**: Three user types (students, committee, admin)
 - **Student Management**: Registration with student status and opportunity types
+- **Company Management**: Admin can add, edit, and manage participating companies
+- **Queue System**: Students can join company interview queues with priority-based positioning
 - **Dashboard System**: Role-specific dashboards with personalized content
+- **Real-time Updates**: Auto-refreshing queue positions and status
 - **Responsive Design**: Mobile-first design with Tailwind CSS
 - **Database Integration**: MongoDB with Mongoose ODM
 - **API System**: RESTful API with comprehensive validation
@@ -145,16 +148,20 @@ interface User {
 1. **Student** (`student`)
    - Can register and access student dashboard
    - Has student status (ENSA/External) and opportunity type
-   - Can view job opportunities and manage applications
+   - Can browse companies and join interview queues
+   - Can view and manage their queue positions
+   - Priority-based queue positioning
 
 2. **Committee** (`committee`)
    - Manages student accounts and company partnerships
    - Can create and manage job offers
    - Has access to statistics and reporting
+   - Higher priority in interview queues
 
 3. **Admin** (`admin`)
    - Full system access and configuration
    - User management and system oversight
+   - Company management (add, edit, activate/deactivate)
    - Access to all administrative features
 
 ### Authentication Flow
@@ -187,6 +194,18 @@ interface User {
 - `POST /api/auth/signin` - User login
 - `POST /api/auth/signout` - User logout
 - `GET /api/auth/session` - Get current session
+
+### Company Management (Admin)
+- `GET /api/admin/companies` - List all companies
+- `POST /api/admin/companies` - Create new company
+- `PATCH /api/admin/companies/[id]` - Update company
+- `DELETE /api/admin/companies/[id]` - Soft delete company
+
+### Queue System (Student)
+- `GET /api/companies` - List companies with queue status
+- `POST /api/student/queue/join` - Join a company queue
+- `GET /api/student/queues` - Get student's active queues
+- `DELETE /api/student/queue/[interviewId]` - Leave a queue
 
 ### Request/Response Format
 ```typescript
@@ -391,7 +410,7 @@ This project is developed for ENSA Tétouan and is intended for educational and 
 ---
 
 **Last Updated**: January 2025  
-**Version**: 1.0.0  
+**Version**: 1.1.0  
 **Maintainer**: ENSA Tétouan Development Team
 
 For the most up-to-date information, please refer to the individual documentation files in this directory.

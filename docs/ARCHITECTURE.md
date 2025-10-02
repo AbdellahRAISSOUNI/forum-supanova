@@ -167,10 +167,40 @@ interface UserRole {
   updatedAt: Date
 }
 
+// Company Collection
+{
+  _id: ObjectId,
+  name: String (indexed),
+  sector: String,
+  website: String,
+  room: String,
+  estimatedInterviewDuration: Number,
+  isActive: Boolean,
+  createdAt: Date,
+  updatedAt: Date
+}
+
+// Interview Collection (Queue System)
+{
+  _id: ObjectId,
+  studentId: ObjectId (ref: User),
+  companyId: ObjectId (ref: Company),
+  status: String (enum: ['waiting', 'in_progress', 'completed', 'cancelled']),
+  queuePosition: Number,
+  priorityScore: Number,
+  opportunityType: String (enum: ['pfa', 'pfe', 'employment', 'observation']),
+  joinedAt: Date,
+  startedAt: Date,
+  completedAt: Date,
+  createdAt: Date,
+  updatedAt: Date
+}
+
 // Indexes
-- { email: 1 } (unique)
-- { role: 1 }
-- { createdAt: -1 }
+- Users: { email: 1 } (unique), { role: 1 }, { createdAt: -1 }
+- Companies: { name: 1 }, { isActive: 1 }
+- Interviews: { studentId: 1 }, { companyId: 1 }, { status: 1 }, { queuePosition: 1 }
+- Compound: { companyId: 1, status: 1, queuePosition: 1 }
 ```
 
 ### Database Connection Strategy

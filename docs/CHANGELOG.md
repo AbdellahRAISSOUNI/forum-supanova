@@ -8,7 +8,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Planned
-- Company registration and management system
 - Job posting and application system
 - Real-time notifications
 - Advanced search and filtering
@@ -20,6 +19,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Advanced caching with Redis
 - Automated testing suite
 - CI/CD pipeline setup
+
+## [1.1.0] - 2025-01-02
+
+### Added
+- **Company Management System**
+  - Company model with fields: name, sector, website, room, estimatedInterviewDuration, isActive
+  - Admin companies management page with table view and actions
+  - Add/Edit company modal with form validation
+  - Company CRUD API routes with admin protection
+  - Company activation/deactivation functionality
+
+- **Queue System**
+  - Interview model for queue management
+  - Priority-based queue positioning algorithm
+  - Queue service with priority calculation
+  - Student queue joining functionality
+  - Real-time queue position updates
+  - Queue management interface for students
+
+- **Enhanced Student Experience**
+  - Student companies page with queue information
+  - Join queue modal with opportunity type selection
+  - Student queues page with position tracking
+  - Auto-refresh functionality (10-second intervals)
+  - Progress bars for queue positions
+  - Leave queue functionality
+
+- **Priority System**
+  - Committee members: Priority score 100
+  - ENSA students: Priority score 200
+  - External students: Priority score 300
+  - Opportunity type modifiers: PFA/PFE (+0), Employment (+10), Observation (+20)
+
+- **API Enhancements**
+  - Company management endpoints for admin
+  - Queue system endpoints for students
+  - Enhanced companies endpoint with queue status
+  - Queue position recalculation on leave
+
+- **UI/UX Improvements**
+  - Working navigation buttons in dashboards
+  - Queue length display on company cards
+  - Status badges for queue positions
+  - Responsive queue management interface
+  - Real-time updates and notifications
 
 ## [1.0.0] - 2025-01-02
 
@@ -103,20 +147,64 @@ interface User {
   createdAt: Date;
   updatedAt: Date;
 }
+
+interface Company {
+  _id: ObjectId;
+  name: string; // indexed
+  sector: string;
+  website: string;
+  room: string;
+  estimatedInterviewDuration: number;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface Interview {
+  _id: ObjectId;
+  studentId: ObjectId; // ref to User
+  companyId: ObjectId; // ref to Company
+  status: 'waiting' | 'in_progress' | 'completed' | 'cancelled';
+  queuePosition: number;
+  priorityScore: number; // lower = higher priority
+  opportunityType: 'pfa' | 'pfe' | 'employment' | 'observation';
+  joinedAt: Date;
+  startedAt?: Date;
+  completedAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
 ```
 
 ### API Endpoints
+
+#### Authentication
 - `POST /api/auth/register` - User registration
 - `POST /api/auth/[...nextauth]` - NextAuth.js endpoints
 - `GET /api/auth/session` - Session management
+
+#### Company Management (Admin)
+- `GET /api/admin/companies` - List all companies
+- `POST /api/admin/companies` - Create new company
+- `PATCH /api/admin/companies/[id]` - Update company
+- `DELETE /api/admin/companies/[id]` - Soft delete company
+
+#### Queue System (Student)
+- `GET /api/companies` - List companies with queue status
+- `POST /api/student/queue/join` - Join a company queue
+- `GET /api/student/queues` - Get student's active queues
+- `DELETE /api/student/queue/[interviewId]` - Leave a queue
 
 ### Pages and Routes
 - `/` - Homepage with navigation
 - `/login` - User authentication
 - `/register` - Student registration
 - `/dashboard/student` - Student dashboard
+- `/dashboard/student/companies` - Browse companies and join queues
+- `/dashboard/student/queues` - View and manage queue positions
 - `/dashboard/committee` - Committee dashboard
 - `/dashboard/admin` - Admin dashboard
+- `/dashboard/admin/companies` - Company management interface
 
 ### Environment Variables
 ```env
@@ -176,8 +264,22 @@ forum-supanova/
 ├── scripts/                 # Database seeding scripts
 ├── src/
 │   ├── app/                # Next.js App Router pages
+│   │   ├── api/            # API routes
+│   │   │   ├── admin/      # Admin API endpoints
+│   │   │   ├── auth/       # Authentication endpoints
+│   │   │   ├── companies/  # Company endpoints
+│   │   │   └── student/    # Student API endpoints
+│   │   ├── dashboard/      # Role-based dashboards
+│   │   │   ├── admin/      # Admin dashboard pages
+│   │   │   ├── student/    # Student dashboard pages
+│   │   │   └── committee/  # Committee dashboard pages
+│   │   ├── login/          # Login page
+│   │   ├── register/       # Registration page
+│   │   └── page.tsx        # Homepage
 │   ├── components/         # Reusable React components
 │   ├── lib/                # Utility libraries
+│   │   ├── models/         # Mongoose models
+│   │   └── services/       # Business logic services
 │   └── types/              # TypeScript type definitions
 ├── middleware.ts           # Route protection
 ├── next.config.ts          # Next.js configuration
@@ -275,6 +377,13 @@ forum-supanova/
 ---
 
 ## Version History
+
+### [1.1.0] - 2025-01-02
+- Company management system for admins
+- Queue system with priority-based positioning
+- Enhanced student experience with queue management
+- Real-time updates and auto-refresh functionality
+- Comprehensive API endpoints for queue operations
 
 ### [1.0.0] - 2025-01-02
 - Initial release with core authentication system

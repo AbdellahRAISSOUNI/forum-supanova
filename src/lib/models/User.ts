@@ -8,6 +8,7 @@ export interface IUser extends mongoose.Document {
   role: 'student' | 'committee' | 'admin';
   studentStatus?: 'ensa' | 'external';
   opportunityType?: 'pfa' | 'pfe' | 'employment' | 'observation';
+  assignedRoom?: string; // For committee members only
   createdAt: Date;
   updatedAt: Date;
 }
@@ -46,6 +47,10 @@ const userSchema = new mongoose.Schema<IUser>({
   opportunityType: {
     type: String,
     enum: ['pfa', 'pfe', 'employment', 'observation'],
+  },
+  assignedRoom: {
+    type: String,
+    trim: true,
   },
 }, {
   timestamps: true,

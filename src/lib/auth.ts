@@ -41,6 +41,7 @@ export const authOptions: NextAuthOptions = {
             role: user.role,
             studentStatus: user.studentStatus,
             opportunityType: user.opportunityType,
+            assignedRoom: user.assignedRoom,
           };
         } catch (error) {
           console.error("Auth error:", error);
@@ -59,6 +60,7 @@ export const authOptions: NextAuthOptions = {
         token.firstName = user.firstName;
         token.studentStatus = user.studentStatus;
         token.opportunityType = user.opportunityType;
+        token.assignedRoom = user.assignedRoom;
       }
       return token;
     },
@@ -69,6 +71,7 @@ export const authOptions: NextAuthOptions = {
         session.user.firstName = token.firstName as string;
         session.user.studentStatus = token.studentStatus as "ensa" | "external";
         session.user.opportunityType = token.opportunityType as "pfa" | "pfe" | "employment" | "observation";
+        session.user.assignedRoom = token.assignedRoom as string;
       }
       return session;
     },

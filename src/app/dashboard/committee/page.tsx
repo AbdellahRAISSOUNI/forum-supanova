@@ -1,12 +1,21 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+
+interface Company {
+  _id: string;
+  name: string;
+  sector: string;
+  room: string;
+}
 
 export default function CommitteeDashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const [assignedCompany, setAssignedCompany] = useState<Company | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (status === 'loading') return; // Still loading
@@ -17,12 +26,34 @@ export default function CommitteeDashboard() {
     }
 
     if (session.user.role !== 'committee') {
-      router.push('/');
+      router.push('/'); // Redirect non-committee members
       return;
     }
+
+    fetchAssignedCompany();
   }, [session, status, router]);
 
-  if (status === 'loading') {
+  const fetchAssignedCompany = async () => {
+    if (!session?.user.assignedRoom) {
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/companies');
+      if (response.ok) {
+        const data = await response.json();
+        const company = data.companies.find((c: Company) => c.room === session.user.assignedRoom);
+        setAssignedCompany(company || null);
+      }
+    } catch (error) {
+      console.error('Error fetching assigned company:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (status === 'loading' || isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -34,7 +65,7 @@ export default function CommitteeDashboard() {
   }
 
   if (!session || session.user.role !== 'committee') {
-    return null;
+    return null; // Or a custom unauthorized component
   }
 
   return (
@@ -67,17 +98,54 @@ export default function CommitteeDashboard() {
             </p>
           </div>
 
-          {/* Committee Stats */}
-          <div className="grid md:grid-cols-4 gap-6 mb-8">
+          {/* Assigned Room Information */}
+          <div className="bg-blue-50 p-6 rounded-lg mb-8">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">Informations d'Assignation</h3>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-gray-600">Salle Assignée:</p>
+                <p className="text-lg font-medium text-gray-900">
+                  {session.user.assignedRoom || 'Aucune salle assignée'}
+                </p>
+              </div>
+              {assignedCompany && (
+                <div>
+                  <p className="text-sm text-gray-600">Entreprise:</p>
+                  <p className="text-lg font-medium text-gray-900">{assignedCompany.name}</p>
+                  <p className="text-sm text-gray-600">{assignedCompany.sector}</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Queue Management Notice */}
+          <div className="bg-yellow-50 border border-yellow-200 p-6 rounded-lg mb-8">
+            <div className="flex items-center">
+              <div className="w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center mr-3">
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <h4 className="text-lg font-semibold text-yellow-800">Gestion des Files d'Attente</h4>
+                <p className="text-yellow-700 mt-1">
+                  La gestion des files d'attente pour votre salle sera disponible prochainement.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Committee Actions */}
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div className="bg-blue-50 p-6 rounded-lg">
               <div className="flex items-center">
                 <div className="w-12 h-12 bg-[#2880CA] rounded-full flex items-center justify-center mr-4">
                   <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
                   </svg>
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-800">Étudiants</h3>
+                  <h3 className="text-lg font-semibold text-gray-800">Gestion des Étudiants</h3>
                   <p className="text-gray-600">Gérer les comptes étudiants</p>
                 </div>
               </div>
@@ -87,12 +155,12 @@ export default function CommitteeDashboard() {
               <div className="flex items-center">
                 <div className="w-12 h-12 bg-[#2880CA] rounded-full flex items-center justify-center mr-4">
                   <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                   </svg>
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-800">Entreprises</h3>
-                  <p className="text-gray-600">Gérer les partenaires</p>
+                  <h3 className="text-lg font-semibold text-gray-800">Files d'Attente</h3>
+                  <p className="text-gray-600">Gérer les files d'attente</p>
                 </div>
               </div>
             </div>
@@ -101,47 +169,22 @@ export default function CommitteeDashboard() {
               <div className="flex items-center">
                 <div className="w-12 h-12 bg-[#2880CA] rounded-full flex items-center justify-center mr-4">
                   <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-800">Offres</h3>
-                  <p className="text-gray-600">Gérer les offres d&apos;emploi</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-orange-50 p-6 rounded-lg">
-              <div className="flex items-center">
-                <div className="w-12 h-12 bg-[#2880CA] rounded-full flex items-center justify-center mr-4">
-                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                   </svg>
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-gray-800">Statistiques</h3>
-                  <p className="text-gray-600">Analyser les données</p>
+                  <p className="text-gray-600">Voir les rapports et statistiques</p>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Quick Actions */}
-          <div className="border-t pt-8">
-            <h3 className="text-xl font-semibold text-gray-800 mb-4">Actions Rapides</h3>
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <button className="bg-[#2880CA] hover:bg-[#1e5f8a] text-white px-4 py-3 rounded-lg transition-colors">
-                Nouvelle offre
-              </button>
-              <button className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-3 rounded-lg transition-colors">
-                Gestion étudiants
-              </button>
-              <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg transition-colors">
-                Validation candidatures
-              </button>
-              <button className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-lg transition-colors">
-                Rapports
-              </button>
+          {/* Recent Activity */}
+          <div className="border-t pt-8 mt-8">
+            <h3 className="text-xl font-semibold text-gray-800 mb-4">Activité récente</h3>
+            <div className="bg-gray-50 rounded-lg p-6 text-center">
+              <p className="text-gray-600">Aucune activité récente à afficher</p>
             </div>
           </div>
         </div>

@@ -3,6 +3,7 @@
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import Link from 'next/link';
 
 export default function AdminDashboard() {
   const { data: session, status } = useSession();
@@ -97,19 +98,19 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            <div className="bg-purple-50 p-6 rounded-lg">
-              <div className="flex items-center">
-                <div className="w-12 h-12 bg-[#2880CA] rounded-full flex items-center justify-center mr-4">
-                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-800">Stages</h3>
-                  <p className="text-gray-600">Gestion des offres</p>
-                </div>
-              </div>
-            </div>
+                <Link href="/dashboard/admin/committee" className="bg-purple-50 p-6 rounded-lg hover:bg-purple-100 transition-colors">
+                  <div className="flex items-center">
+                    <div className="w-12 h-12 bg-[#2880CA] rounded-full flex items-center justify-center mr-4">
+                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-800">Comité</h3>
+                      <p className="text-gray-600">Gestion des membres du comité</p>
+                    </div>
+                  </div>
+                </Link>
 
             <div className="bg-red-50 p-6 rounded-lg">
               <div className="flex items-center">
@@ -130,18 +131,18 @@ export default function AdminDashboard() {
           <div className="border-t pt-8">
             <h3 className="text-xl font-semibold text-gray-800 mb-4">Actions Rapides</h3>
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <button className="bg-[#2880CA] hover:bg-[#1e5f8a] text-white px-4 py-3 rounded-lg transition-colors">
-                Nouveau Stage
-              </button>
-              <button className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-3 rounded-lg transition-colors">
-                Gestion Utilisateurs
-              </button>
-              <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg transition-colors">
-                Statistiques
-              </button>
-              <button className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-lg transition-colors">
-                Paramètres
-              </button>
+                  <Link href="/dashboard/admin/companies" className="bg-[#2880CA] hover:bg-[#1e5f8a] text-white px-4 py-3 rounded-lg transition-colors text-center">
+                    Gérer les Entreprises
+                  </Link>
+                  <Link href="/dashboard/admin/committee" className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-lg transition-colors text-center">
+                    Gérer le Comité
+                  </Link>
+                  <button className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-3 rounded-lg transition-colors">
+                    Gestion Utilisateurs
+                  </button>
+                  <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg transition-colors">
+                    Statistiques
+                  </button>
             </div>
           </div>
 
