@@ -339,3 +339,235 @@ export async function getQueueStats(companyId: string): Promise<{
     return { totalWaiting: 0, averageWaitTime: 0, estimatedWaitTime: 0 };
   }
 }
+
+/**
+ * Start an interview
+ */
+export async function startInterview(interviewId: string, committeeUserId: string): Promise<JoinQueueResult> {
+  try {
+    await connectDB();
+
+    if (!mongoose.Types.ObjectId.isValid(interviewId) || !mongoose.Types.ObjectId.isValid(committeeUserId)) {
+      return {
+        success: false,
+        message: 'ID invalide'
+      };
+    }
+
+    // Get committee member
+    const committeeMember = await User.findById(committeeUserId);
+    if (!committeeMember || committeeMember.role !== 'committee') {
+      return {
+        success: false,
+        message: 'Membre du comité non trouvé'
+      };
+    }
+
+    // Get interview
+    const interview = await Interview.findById(interviewId)
+      .populate('companyId', 'room name')
+      .populate('studentId', 'firstName name studentStatus role');
+    
+    if (!interview) {
+      return {
+        success: false,
+        message: 'Entretien non trouvé'
+      };
+    }
+
+    // Verify committee member has access to this room
+    if (committeeMember.assignedRoom !== interview.companyId.room) {
+      return {
+        success: false,
+        message: 'Vous n\'avez pas accès à cette salle'
+      };
+    }
+
+    // Check interview status
+    if (interview.status !== 'waiting') {
+      return {
+        success: false,
+        message: 'Cet entretien n\'est pas en attente'
+      };
+    }
+
+    // Check if there's already an interview in progress for this company
+    const inProgressInterview = await Interview.findOne({
+      companyId: interview.companyId._id,
+      status: 'in_progress'
+    });
+
+    if (inProgressInterview) {
+      return {
+        success: false,
+        message: 'Un entretien est déjà en cours pour cette entreprise'
+      };
+    }
+
+    // Update interview status
+    await Interview.findByIdAndUpdate(interviewId, {
+      status: 'in_progress',
+      startedAt: new Date(),
+      updatedAt: new Date()
+    });
+
+    return {
+      success: true,
+      message: 'Entretien démarré avec succès'
+    };
+  } catch (error) {
+    console.error('Error starting interview:', error);
+    return {
+      success: false,
+      message: 'Erreur interne du serveur'
+    };
+  }
+}
+
+/**
+ * End an interview
+ */
+export async function endInterview(interviewId: string, committeeUserId: string): Promise<JoinQueueResult> {
+  try {
+    await connectDB();
+
+    if (!mongoose.Types.ObjectId.isValid(interviewId) || !mongoose.Types.ObjectId.isValid(committeeUserId)) {
+      return {
+        success: false,
+        message: 'ID invalide'
+      };
+    }
+
+    // Get committee member
+    const committeeMember = await User.findById(committeeUserId);
+    if (!committeeMember || committeeMember.role !== 'committee') {
+      return {
+        success: false,
+        message: 'Membre du comité non trouvé'
+      };
+    }
+
+    // Get interview
+    const interview = await Interview.findById(interviewId)
+      .populate('companyId', 'room name')
+      .populate('studentId', 'firstName name studentStatus role');
+    
+    if (!interview) {
+      return {
+        success: false,
+        message: 'Entretien non trouvé'
+      };
+    }
+
+    // Verify committee member has access to this room
+    if (committeeMember.assignedRoom !== interview.companyId.room) {
+      return {
+        success: false,
+        message: 'Vous n\'avez pas accès à cette salle'
+      };
+    }
+
+    // Check interview status
+    if (interview.status !== 'in_progress') {
+      return {
+        success: false,
+        message: 'Cet entretien n\'est pas en cours'
+      };
+    }
+
+    // Update interview status
+    await Interview.findByIdAndUpdate(interviewId, {
+      status: 'completed',
+      completedAt: new Date(),
+      updatedAt: new Date()
+    });
+
+    // Recalculate queue positions for this company
+    await recalculateQueuePositions(interview.companyId._id.toString());
+
+    return {
+      success: true,
+      message: 'Entretien terminé avec succès'
+    };
+  } catch (error) {
+    console.error('Error ending interview:', error);
+    return {
+      success: false,
+      message: 'Erreur interne du serveur'
+    };
+  }
+}
+
+/**
+ * Get queue for a specific room
+ */
+export async function getQueueForRoom(room: string): Promise<{
+  company: any;
+  currentInterview: any;
+  nextUp: any;
+  waitingQueue: any[];
+  totalWaiting: number;
+}> {
+  try {
+    await connectDB();
+
+    // Get company for this room
+    const company = await Company.findOne({ room, isActive: true });
+    if (!company) {
+      throw new Error('Aucune entreprise trouvée pour cette salle');
+    }
+
+    // Get current in-progress interview
+    const currentInterview = await Interview.findOne({
+      companyId: company._id,
+      status: 'in_progress'
+    })
+    .populate('studentId', 'firstName name studentStatus role');
+
+    // Get waiting interviews
+    const waitingInterviews = await Interview.find({
+      companyId: company._id,
+      status: 'waiting'
+    })
+    .populate('studentId', 'firstName name studentStatus role')
+    .sort({ priorityScore: 1, joinedAt: 1 });
+
+    // Format waiting queue
+    const waitingQueue = waitingInterviews.map((interview: any, index: number) => ({
+      interviewId: interview._id.toString(),
+      studentName: `${interview.studentId.firstName} ${interview.studentId.name}`,
+      studentStatus: interview.studentId.studentStatus,
+      role: interview.studentId.role,
+      position: index + 1,
+      opportunityType: interview.opportunityType,
+      joinedAt: interview.joinedAt,
+      priorityScore: interview.priorityScore,
+    }));
+
+    // Get next up (first in waiting queue)
+    const nextUp = waitingQueue.length > 0 ? waitingQueue[0] : null;
+
+    return {
+      company: {
+        _id: company._id.toString(),
+        name: company.name,
+        room: company.room,
+        estimatedInterviewDuration: company.estimatedInterviewDuration
+      },
+      currentInterview: currentInterview ? {
+        interviewId: currentInterview._id.toString(),
+        studentName: `${currentInterview.studentId.firstName} ${currentInterview.studentId.name}`,
+        studentStatus: currentInterview.studentId.studentStatus,
+        role: currentInterview.studentId.role,
+        opportunityType: currentInterview.opportunityType,
+        startedAt: currentInterview.startedAt,
+      } : null,
+      nextUp,
+      waitingQueue: waitingQueue.slice(0, 10), // Show next 10
+      totalWaiting: waitingQueue.length,
+    };
+  } catch (error) {
+    console.error('Error getting queue for room:', error);
+    throw error;
+  }
+}

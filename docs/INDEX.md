@@ -80,6 +80,23 @@ The Forum des Entreprises is a comprehensive web application built with Next.js 
 4. **Create Admin User**: `npm run seed:admin`
 5. **Start Development**: `npm run dev`
 
+### Testing the Queue System
+1. **Setup Committee Member**
+   - Login as admin (admin@ensa.ma / Admin2025!)
+   - Go to `/dashboard/admin/committee`
+   - Create a committee member assigned to a room
+
+2. **Setup Students**
+   - Register 5 student accounts
+   - Have them join queues for the committee member's room
+
+3. **Test Interview Flow**
+   - Login as committee member
+   - Go to `/dashboard/committee`
+   - Start interview with first student
+   - Verify timer and student status updates
+   - End interview and verify position updates
+
 ### Development Commands
 ```bash
 npm run dev          # Start development server
@@ -132,6 +149,7 @@ interface User {
   role: 'student' | 'committee' | 'admin';
   studentStatus?: 'ensa' | 'external'; // students only
   opportunityType?: 'pfa' | 'pfe' | 'employment' | 'observation'; // students only
+  assignedRoom?: string; // committee members only
   createdAt: Date;
   updatedAt: Date;
 }
@@ -157,11 +175,14 @@ interface User {
    - Can create and manage job offers
    - Has access to statistics and reporting
    - Higher priority in interview queues
+   - Manages interview queues for assigned rooms
+   - Can start/end interviews and manage queue positions
 
 3. **Admin** (`admin`)
    - Full system access and configuration
    - User management and system oversight
    - Company management (add, edit, activate/deactivate)
+   - Committee member management (create, assign rooms, edit, delete)
    - Access to all administrative features
 
 ### Authentication Flow
@@ -200,6 +221,18 @@ interface User {
 - `POST /api/admin/companies` - Create new company
 - `PATCH /api/admin/companies/[id]` - Update company
 - `DELETE /api/admin/companies/[id]` - Soft delete company
+
+### Committee Management (Admin)
+- `GET /api/admin/committee` - List all committee members
+- `POST /api/admin/committee` - Create new committee member
+- `PATCH /api/admin/committee/[id]` - Update committee member
+- `DELETE /api/admin/committee/[id]` - Delete committee member
+- `GET /api/admin/rooms` - List available rooms from companies
+
+### Queue Management (Committee)
+- `GET /api/committee/queue` - Get queue for committee's assigned room
+- `POST /api/committee/interview/start` - Start an interview
+- `POST /api/committee/interview/end` - End an interview
 
 ### Queue System (Student)
 - `GET /api/companies` - List companies with queue status

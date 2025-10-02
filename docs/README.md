@@ -54,11 +54,14 @@ forum-supanova/
    - Can create and manage job offers
    - Has access to statistics and reporting
    - Higher priority in interview queues
+   - Manages interview queues for assigned rooms
+   - Can start/end interviews and manage queue positions
 
 3. **Admin** (`admin`)
    - Full system access and configuration
    - User management and system oversight
    - Company management (add, edit, activate/deactivate)
+   - Committee member management (create, assign rooms, edit, delete)
    - Access to all administrative features
 
 ### Authentication Flow
@@ -79,6 +82,7 @@ interface IUser {
   role: 'student' | 'committee' | 'admin';
   studentStatus?: 'ensa' | 'external';  // For students only
   opportunityType?: 'pfa' | 'pfe' | 'employment' | 'observation';  // For students only
+  assignedRoom?: string;                // For committee members only
   createdAt: Date;
   updatedAt: Date;
 }
@@ -188,6 +192,18 @@ NEXTAUTH_SECRET=your-secret-key-here
 - `GET /api/student/queues` - Get student's active queues
 - `DELETE /api/student/queue/[interviewId]` - Leave a queue
 
+### Committee Management (Admin)
+- `GET /api/admin/committee` - List all committee members
+- `POST /api/admin/committee` - Create new committee member
+- `PATCH /api/admin/committee/[id]` - Update committee member
+- `DELETE /api/admin/committee/[id]` - Delete committee member
+- `GET /api/admin/rooms` - List available rooms from companies
+
+### Queue Management (Committee)
+- `GET /api/committee/queue` - Get queue for committee's assigned room
+- `POST /api/committee/interview/start` - Start an interview
+- `POST /api/committee/interview/end` - End an interview
+
 ## 🎨 UI Components
 
 ### Design System
@@ -203,9 +219,10 @@ NEXTAUTH_SECRET=your-secret-key-here
 4. **Student Dashboard** (`/dashboard/student`) - Student-specific interface
 5. **Student Companies** (`/dashboard/student/companies`) - Browse companies and join queues
 6. **Student Queues** (`/dashboard/student/queues`) - View and manage queue positions
-7. **Committee Dashboard** (`/dashboard/committee`) - Committee management interface
+7. **Committee Dashboard** (`/dashboard/committee`) - Queue management interface with interview controls
 8. **Admin Dashboard** (`/dashboard/admin`) - Administrative interface
 9. **Admin Companies** (`/dashboard/admin/companies`) - Company management interface
+10. **Admin Committee** (`/dashboard/admin/committee`) - Committee member management interface
 
 ## 🛡️ Security Features
 

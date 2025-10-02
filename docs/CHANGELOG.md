@@ -20,6 +20,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Automated testing suite
 - CI/CD pipeline setup
 
+## [1.2.0] - 2025-01-02
+
+### Added
+- **Committee Management System**
+  - Committee member model with assignedRoom field
+  - Admin committee management page with table view and actions
+  - Add/Edit committee member modal with room assignment
+  - Committee CRUD API routes with admin protection
+  - Room validation against active companies
+
+- **Interview Management System**
+  - Committee dashboard with queue management interface
+  - Start/End interview functionality with real-time timer
+  - Current interview display with elapsed time
+  - Next up student display with start button
+  - Waiting queue display (next 10 students)
+  - Auto-refresh every 5 seconds for committee
+
+- **Enhanced Queue Service**
+  - startInterview() function with room access validation
+  - endInterview() function with position recalculation
+  - getQueueForRoom() function for committee dashboard
+  - Real-time queue position updates
+  - Single interview enforcement per company
+
+- **Student Queue Enhancements**
+  - "EN COURS" status badge for in-progress interviews
+  - "VOTRE TOUR!" badge for position #1 students
+  - Enhanced progress bar colors based on status
+  - Interview status display in student queue page
+  - Auto-refresh every 10 seconds
+
+- **API Enhancements**
+  - Committee queue management endpoints
+  - Interview start/end endpoints with validation
+  - Room access control and security
+  - Real-time queue data for committee dashboard
+
+- **UI/UX Improvements**
+  - Touch-friendly interface for tablet use
+  - Large buttons for committee actions
+  - Real-time timer display for current interviews
+  - Priority badges (Committee/ENSA/External)
+  - Enhanced status indicators and animations
+
 ## [1.1.0] - 2025-01-02
 
 ### Added

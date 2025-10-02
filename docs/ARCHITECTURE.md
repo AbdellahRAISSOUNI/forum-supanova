@@ -163,6 +163,7 @@ interface UserRole {
   role: String (enum: ['student', 'committee', 'admin']),
   studentStatus: String (enum: ['ensa', 'external']), // students only
   opportunityType: String (enum: ['pfa', 'pfe', 'employment', 'observation']), // students only
+  assignedRoom: String, // committee members only
   createdAt: Date,
   updatedAt: Date
 }
@@ -226,7 +227,19 @@ Authentication Endpoints:
 POST /api/auth/register     # User registration
 POST /api/auth/signin       # User login (NextAuth)
 POST /api/auth/signout      # User logout (NextAuth)
-GET  /api/auth/session      # Get current session (NextAuth)
+GET  /api/auth/session      # Get current session
+
+Committee Management Endpoints (Admin):
+GET    /api/admin/committee        # List committee members
+POST   /api/admin/committee        # Create committee member
+PATCH  /api/admin/committee/[id]   # Update committee member
+DELETE /api/admin/committee/[id]   # Delete committee member
+GET    /api/admin/rooms            # List available rooms
+
+Queue Management Endpoints (Committee):
+GET  /api/committee/queue              # Get queue for assigned room
+POST /api/committee/interview/start    # Start interview
+POST /api/committee/interview/end      # End interview (NextAuth)
 
 Future Endpoints (planned):
 GET  /api/users             # List users (admin)

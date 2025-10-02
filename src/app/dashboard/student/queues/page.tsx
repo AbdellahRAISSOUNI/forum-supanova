@@ -108,8 +108,8 @@ export default function StudentQueuesPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'waiting': return 'bg-yellow-100 text-yellow-800';
-      case 'in_progress': return 'bg-blue-100 text-blue-800';
-      case 'completed': return 'bg-green-100 text-green-800';
+      case 'in_progress': return 'bg-green-100 text-green-800';
+      case 'completed': return 'bg-blue-100 text-blue-800';
       case 'cancelled': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
@@ -235,13 +235,31 @@ export default function StudentQueuesPage() {
                 <div className="mb-4">
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-sm font-medium text-gray-700">Votre position</span>
-                    <span className="text-lg font-bold text-[#2880CA]">#{queue.position}</span>
+                    <div className="flex items-center space-x-2">
+                      {queue.status === 'in_progress' && (
+                        <span className="px-2 py-1 text-xs font-semibold bg-green-100 text-green-800 rounded-full animate-pulse">
+                          EN COURS
+                        </span>
+                      )}
+                      {queue.position === 1 && queue.status === 'waiting' && (
+                        <span className="px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded-full animate-pulse">
+                          VOTRE TOUR !
+                        </span>
+                      )}
+                      <span className="text-lg font-bold text-[#2880CA]">#{queue.position}</span>
+                    </div>
                   </div>
                   
                   {/* Progress Bar */}
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div 
-                      className="bg-[#2880CA] h-2 rounded-full transition-all duration-300"
+                      className={`h-2 rounded-full transition-all duration-300 ${
+                        queue.status === 'in_progress' 
+                          ? 'bg-green-500' 
+                          : queue.position === 1 && queue.status === 'waiting'
+                          ? 'bg-blue-500'
+                          : 'bg-[#2880CA]'
+                      }`}
                       style={{ width: `${calculateProgress(queue.position, queue.position + 5)}%` }}
                     ></div>
                   </div>
@@ -258,13 +276,19 @@ export default function StudentQueuesPage() {
 
                 {/* Action Button */}
                 <div className="flex justify-end">
-                  <button
-                    onClick={() => handleLeaveQueue(queue._id)}
-                    disabled={leavingQueueId === queue._id || queue.status !== 'waiting'}
-                    className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {leavingQueueId === queue._id ? 'Sortie...' : 'Quitter la file'}
-                  </button>
+                  {queue.status === 'in_progress' ? (
+                    <div className="px-4 py-2 bg-green-100 text-green-800 rounded-md font-semibold">
+                      Entretien en cours
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => handleLeaveQueue(queue._id)}
+                      disabled={leavingQueueId === queue._id || queue.status !== 'waiting'}
+                      className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {leavingQueueId === queue._id ? 'Sortie...' : 'Quitter la file'}
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

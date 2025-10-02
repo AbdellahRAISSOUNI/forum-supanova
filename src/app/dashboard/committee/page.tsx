@@ -4,21 +4,55 @@ import { useState, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 
-interface Company {
-  _id: string;
-  name: string;
-  sector: string;
-  room: string;
+interface QueueData {
+  company: {
+    _id: string;
+    name: string;
+    room: string;
+    estimatedInterviewDuration: number;
+  };
+  currentInterview: {
+    interviewId: string;
+    studentName: string;
+    studentStatus: string;
+    role: string;
+    opportunityType: string;
+    startedAt: string;
+  } | null;
+  nextUp: {
+    interviewId: string;
+    studentName: string;
+    studentStatus: string;
+    role: string;
+    position: number;
+    opportunityType: string;
+    joinedAt: string;
+    priorityScore: number;
+  } | null;
+  waitingQueue: Array<{
+    interviewId: string;
+    studentName: string;
+    studentStatus: string;
+    role: string;
+    position: number;
+    opportunityType: string;
+    joinedAt: string;
+    priorityScore: number;
+  }>;
+  totalWaiting: number;
 }
 
 export default function CommitteeDashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [assignedCompany, setAssignedCompany] = useState<Company | null>(null);
+  const [queueData, setQueueData] = useState<QueueData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [isActionLoading, setIsActionLoading] = useState(false);
+  const [elapsedTime, setElapsedTime] = useState(0);
 
   useEffect(() => {
-    if (status === 'loading') return; // Still loading
+    if (status === 'loading') return;
 
     if (!session) {
       router.push('/login?callbackUrl=/dashboard/committee');
@@ -26,30 +60,136 @@ export default function CommitteeDashboard() {
     }
 
     if (session.user.role !== 'committee') {
-      router.push('/'); // Redirect non-committee members
+      router.push('/');
       return;
     }
 
-    fetchAssignedCompany();
+    fetchQueueData();
   }, [session, status, router]);
 
-  const fetchAssignedCompany = async () => {
-    if (!session?.user.assignedRoom) {
-      setIsLoading(false);
-      return;
-    }
+  // Auto-refresh every 5 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (session?.user.role === 'committee') {
+        fetchQueueData();
+      }
+    }, 5000);
 
+    return () => clearInterval(interval);
+  }, [session]);
+
+  // Timer for current interview
+  useEffect(() => {
+    if (queueData?.currentInterview) {
+      const startTime = new Date(queueData.currentInterview.startedAt).getTime();
+      const updateTimer = () => {
+        const now = Date.now();
+        setElapsedTime(Math.floor((now - startTime) / 1000));
+      };
+      
+      updateTimer();
+      const interval = setInterval(updateTimer, 1000);
+      return () => clearInterval(interval);
+    } else {
+      setElapsedTime(0);
+    }
+  }, [queueData?.currentInterview]);
+
+  const fetchQueueData = async () => {
     try {
-      const response = await fetch('/api/companies');
+      const response = await fetch('/api/committee/queue');
       if (response.ok) {
         const data = await response.json();
-        const company = data.companies.find((c: Company) => c.room === session.user.assignedRoom);
-        setAssignedCompany(company || null);
+        setQueueData(data.queueData);
+      } else {
+        setMessage({ type: 'error', text: 'Erreur lors du chargement de la file d\'attente' });
       }
     } catch (error) {
-      console.error('Error fetching assigned company:', error);
+      setMessage({ type: 'error', text: 'Erreur de connexion au serveur' });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const startInterview = async (interviewId: string) => {
+    setIsActionLoading(true);
+    setMessage(null);
+
+    try {
+      const response = await fetch('/api/committee/interview/start', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ interviewId }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setMessage({ type: 'success', text: data.message });
+        fetchQueueData(); // Refresh queue data
+      } else {
+        setMessage({ type: 'error', text: data.error || 'Erreur lors du démarrage de l\'entretien' });
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Erreur de connexion au serveur' });
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
+  const endInterview = async (interviewId: string) => {
+    setIsActionLoading(true);
+    setMessage(null);
+
+    try {
+      const response = await fetch('/api/committee/interview/end', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ interviewId }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setMessage({ type: 'success', text: data.message });
+        fetchQueueData(); // Refresh queue data
+      } else {
+        setMessage({ type: 'error', text: data.error || 'Erreur lors de la fin de l\'entretien' });
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Erreur de connexion au serveur' });
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const getPriorityBadge = (role: string, studentStatus: string) => {
+    if (role === 'committee') {
+      return <span className="px-2 py-1 text-xs font-semibold bg-purple-100 text-purple-800 rounded-full">Comité</span>;
+    } else if (studentStatus === 'ensa') {
+      return <span className="px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded-full">ENSA</span>;
+    } else {
+      return <span className="px-2 py-1 text-xs font-semibold bg-gray-100 text-gray-800 rounded-full">Externe</span>;
+    }
+  };
+
+  const getOpportunityTypeText = (type: string) => {
+    switch (type) {
+      case 'pfa': return 'PFA';
+      case 'pfe': return 'PFE';
+      case 'employment': return 'Emploi';
+      case 'observation': return 'Stage d\'observation';
+      default: return type;
     }
   };
 
@@ -65,7 +205,7 @@ export default function CommitteeDashboard() {
   }
 
   if (!session || session.user.role !== 'committee') {
-    return null; // Or a custom unauthorized component
+    return null;
   }
 
   return (
@@ -74,8 +214,10 @@ export default function CommitteeDashboard() {
       <header className="bg-[#2880CA] text-white py-6 px-4 sm:px-8">
         <div className="max-w-6xl mx-auto flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold">Tableau de Bord Comité</h1>
-            <p className="text-lg opacity-90">ENSA Tétouan - Forum des Entreprises</p>
+            <h1 className="text-3xl font-bold">Gestion des Files d'Attente</h1>
+            <p className="text-lg opacity-90">
+              {queueData?.company.name} - Salle {queueData?.company.room}
+            </p>
           </div>
           <button
             onClick={() => signOut({ callbackUrl: '/' })}
@@ -88,106 +230,139 @@ export default function CommitteeDashboard() {
 
       {/* Main Content */}
       <main className="max-w-6xl mx-auto py-8 px-4 sm:px-8">
-        <div className="bg-white rounded-lg shadow-md p-8">
-          <div className="mb-8">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-2">
-              Bienvenue, {session.user.firstName} {session.user.name} !
-            </h2>
-            <p className="text-gray-600">
-              Vous êtes connecté en tant que membre du comité.
-            </p>
+        {message && (
+          <div className={`p-4 rounded-md mb-6 ${
+            message.type === 'error'
+              ? 'bg-red-50 border border-red-200 text-red-700'
+              : 'bg-green-50 border border-green-200 text-green-700'
+          }`}>
+            {message.text}
           </div>
+        )}
 
-          {/* Assigned Room Information */}
-          <div className="bg-blue-50 p-6 rounded-lg mb-8">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Informations d'Assignation</h3>
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-gray-600">Salle Assignée:</p>
-                <p className="text-lg font-medium text-gray-900">
-                  {session.user.assignedRoom || 'Aucune salle assignée'}
-                </p>
+        {!queueData ? (
+          <div className="bg-white p-8 rounded-lg shadow-md text-center">
+            <p className="text-gray-600 text-lg">Aucune file d'attente disponible pour votre salle.</p>
+          </div>
+        ) : (
+          <div className="space-y-8">
+            {/* Current Interview Section */}
+            {queueData.currentInterview && (
+              <div className="bg-green-50 border-2 border-green-200 rounded-lg p-8">
+                <h2 className="text-2xl font-bold text-green-800 mb-6">Entretien en Cours</h2>
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                      {queueData.currentInterview.studentName}
+                    </h3>
+                    <div className="space-y-2">
+                      <p className="text-gray-600">
+                        <span className="font-medium">Type:</span> {getOpportunityTypeText(queueData.currentInterview.opportunityType)}
+                      </p>
+                      <p className="text-gray-600">
+                        <span className="font-medium">Statut:</span> {getPriorityBadge(queueData.currentInterview.role, queueData.currentInterview.studentStatus)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-4xl font-mono font-bold text-green-600 mb-4">
+                      {formatTime(elapsedTime)}
+                    </div>
+                    <button
+                      onClick={() => endInterview(queueData.currentInterview!.interviewId)}
+                      disabled={isActionLoading}
+                      className="w-full bg-red-600 hover:bg-red-700 text-white px-8 py-4 rounded-lg text-lg font-semibold transition-colors disabled:opacity-50"
+                    >
+                      {isActionLoading ? 'Terminaison...' : 'Terminer l\'Entretien'}
+                    </button>
+                  </div>
+                </div>
               </div>
-              {assignedCompany && (
-                <div>
-                  <p className="text-sm text-gray-600">Entreprise:</p>
-                  <p className="text-lg font-medium text-gray-900">{assignedCompany.name}</p>
-                  <p className="text-sm text-gray-600">{assignedCompany.sector}</p>
+            )}
+
+            {/* Next Up Section */}
+            {queueData.nextUp && !queueData.currentInterview && (
+              <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-8">
+                <h2 className="text-2xl font-bold text-blue-800 mb-6">Prochain en File</h2>
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                      {queueData.nextUp.studentName}
+                    </h3>
+                    <div className="space-y-2">
+                      <p className="text-gray-600">
+                        <span className="font-medium">Position:</span> #{queueData.nextUp.position}
+                      </p>
+                      <p className="text-gray-600">
+                        <span className="font-medium">Type:</span> {getOpportunityTypeText(queueData.nextUp.opportunityType)}
+                      </p>
+                      <p className="text-gray-600">
+                        <span className="font-medium">Statut:</span> {getPriorityBadge(queueData.nextUp.role, queueData.nextUp.studentStatus)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-center">
+                    <button
+                      onClick={() => startInterview(queueData.nextUp!.interviewId)}
+                      disabled={isActionLoading}
+                      className="w-full bg-[#2880CA] hover:bg-[#1e5f8a] text-white px-8 py-4 rounded-lg text-lg font-semibold transition-colors disabled:opacity-50"
+                    >
+                      {isActionLoading ? 'Démarrage...' : 'Démarrer l\'Entretien'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Waiting Queue Section */}
+            <div className="bg-white rounded-lg shadow-md p-8">
+              <h2 className="text-2xl font-bold text-gray-800 mb-6">File d'Attente</h2>
+              
+              {queueData.waitingQueue.length === 0 ? (
+                <p className="text-gray-600 text-center py-8">Aucun étudiant en attente</p>
+              ) : (
+                <div className="space-y-4">
+                  {queueData.waitingQueue.map((student) => (
+                    <div key={student.interviewId} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                      <div className="flex items-center space-x-4">
+                        <div className="w-12 h-12 bg-[#2880CA] text-white rounded-full flex items-center justify-center font-bold">
+                          #{student.position}
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-gray-900">{student.studentName}</h4>
+                          <div className="flex items-center space-x-2 mt-1">
+                            <span className="text-sm text-gray-600">
+                              {getOpportunityTypeText(student.opportunityType)}
+                            </span>
+                            {getPriorityBadge(student.role, student.studentStatus)}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        Arrivé: {new Date(student.joinedAt).toLocaleTimeString('fr-FR', { 
+                          hour: '2-digit', 
+                          minute: '2-digit' 
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {queueData.totalWaiting > 10 && (
+                    <div className="text-center text-gray-600 py-4">
+                      ... et {queueData.totalWaiting - 10} autres en attente
+                    </div>
+                  )}
+                  
+                  <div className="border-t pt-4 text-center">
+                    <p className="text-lg font-semibold text-gray-800">
+                      Total en attente: {queueData.totalWaiting} étudiant{queueData.totalWaiting !== 1 ? 's' : ''}
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
           </div>
-
-          {/* Queue Management Notice */}
-          <div className="bg-yellow-50 border border-yellow-200 p-6 rounded-lg mb-8">
-            <div className="flex items-center">
-              <div className="w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center mr-3">
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div>
-                <h4 className="text-lg font-semibold text-yellow-800">Gestion des Files d'Attente</h4>
-                <p className="text-yellow-700 mt-1">
-                  La gestion des files d'attente pour votre salle sera disponible prochainement.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Committee Actions */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div className="bg-blue-50 p-6 rounded-lg">
-              <div className="flex items-center">
-                <div className="w-12 h-12 bg-[#2880CA] rounded-full flex items-center justify-center mr-4">
-                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-800">Gestion des Étudiants</h3>
-                  <p className="text-gray-600">Gérer les comptes étudiants</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-green-50 p-6 rounded-lg">
-              <div className="flex items-center">
-                <div className="w-12 h-12 bg-[#2880CA] rounded-full flex items-center justify-center mr-4">
-                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-800">Files d'Attente</h3>
-                  <p className="text-gray-600">Gérer les files d'attente</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-purple-50 p-6 rounded-lg">
-              <div className="flex items-center">
-                <div className="w-12 h-12 bg-[#2880CA] rounded-full flex items-center justify-center mr-4">
-                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-800">Statistiques</h3>
-                  <p className="text-gray-600">Voir les rapports et statistiques</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Recent Activity */}
-          <div className="border-t pt-8 mt-8">
-            <h3 className="text-xl font-semibold text-gray-800 mb-4">Activité récente</h3>
-            <div className="bg-gray-50 rounded-lg p-6 text-center">
-              <p className="text-gray-600">Aucune activité récente à afficher</p>
-            </div>
-          </div>
-        </div>
+        )}
       </main>
 
       {/* Footer */}

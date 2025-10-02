@@ -361,6 +361,180 @@ Returns active companies with queue information for students.
 }
 ```
 
+### Committee Management Endpoints (Admin)
+
+#### List Committee Members
+**GET** `/api/admin/committee`
+
+**Response** (Success):
+```json
+{
+  "committeeMembers": [
+    {
+      "_id": "member_id",
+      "firstName": "John",
+      "name": "Doe",
+      "email": "john.doe@ensa.ma",
+      "assignedRoom": "A1",
+      "createdAt": "2025-01-02T10:30:00Z",
+      "updatedAt": "2025-01-02T10:30:00Z"
+    }
+  ]
+}
+```
+
+#### Create Committee Member
+**POST** `/api/admin/committee`
+
+**Request Body**:
+```json
+{
+  "firstName": "John",
+  "name": "Doe",
+  "email": "john.doe@ensa.ma",
+  "password": "password123",
+  "assignedRoom": "A1"
+}
+```
+
+**Response** (Success):
+```json
+{
+  "message": "Membre du comité créé avec succès",
+  "committeeMember": {
+    "id": "member_id",
+    "firstName": "John",
+    "name": "Doe",
+    "email": "john.doe@ensa.ma",
+    "assignedRoom": "A1"
+  }
+}
+```
+
+#### Update Committee Member
+**PATCH** `/api/admin/committee/[id]`
+
+**Request Body**:
+```json
+{
+  "firstName": "Jane",
+  "assignedRoom": "B2"
+}
+```
+
+#### Delete Committee Member
+**DELETE** `/api/admin/committee/[id]`
+
+**Response** (Success):
+```json
+{
+  "message": "Membre du comité supprimé avec succès"
+}
+```
+
+#### Get Available Rooms
+**GET** `/api/admin/rooms`
+
+**Response** (Success):
+```json
+{
+  "rooms": [
+    {
+      "room": "A1",
+      "companies": "Capgemini, IBM"
+    },
+    {
+      "room": "B2",
+      "companies": "Atos"
+    }
+  ]
+}
+```
+
+### Queue Management Endpoints (Committee)
+
+#### Get Queue for Room
+**GET** `/api/committee/queue`
+
+**Response** (Success):
+```json
+{
+  "queueData": {
+    "company": {
+      "_id": "company_id",
+      "name": "Capgemini",
+      "room": "A1",
+      "estimatedInterviewDuration": 30
+    },
+    "currentInterview": {
+      "interviewId": "interview_id",
+      "studentName": "Alice Smith",
+      "studentStatus": "ensa",
+      "role": "student",
+      "opportunityType": "pfe",
+      "startedAt": "2025-01-02T10:30:00Z"
+    },
+    "nextUp": {
+      "interviewId": "interview_id_2",
+      "studentName": "Bob Johnson",
+      "studentStatus": "ensa",
+      "role": "student",
+      "position": 1,
+      "opportunityType": "employment",
+      "joinedAt": "2025-01-02T10:25:00Z",
+      "priorityScore": 200
+    },
+    "waitingQueue": [
+      {
+        "interviewId": "interview_id_2",
+        "studentName": "Bob Johnson",
+        "studentStatus": "ensa",
+        "role": "student",
+        "position": 1,
+        "opportunityType": "employment",
+        "joinedAt": "2025-01-02T10:25:00Z",
+        "priorityScore": 200
+      }
+    ],
+    "totalWaiting": 5
+  }
+}
+```
+
+#### Start Interview
+**POST** `/api/committee/interview/start`
+
+**Request Body**:
+```json
+{
+  "interviewId": "interview_id"
+}
+```
+
+**Response** (Success):
+```json
+{
+  "message": "Entretien démarré avec succès"
+}
+```
+
+#### End Interview
+**POST** `/api/committee/interview/end`
+
+**Request Body**:
+```json
+{
+  "interviewId": "interview_id"
+}
+```
+
+**Response** (Success):
+```json
+{
+  "message": "Entretien terminé avec succès"
+}
+```
+
 ### Planned Endpoints
 
 1. **Job Postings**
