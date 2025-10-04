@@ -243,8 +243,7 @@ export async function rescheduleInterview(interviewId: string, studentId: string
     // Update interview to move to end of queue
     await Interview.findByIdAndUpdate(interviewId, {
       queuePosition: lastPosition,
-      joinedAt: new Date(), // Update join time to reflect rescheduling
-      updatedAt: new Date()
+      joinedAt: new Date() // Update join time to reflect rescheduling
     });
 
     // Reorder the queue to maintain proper positions
@@ -299,8 +298,7 @@ export async function cancelInterview(interviewId: string, studentId: string, re
     // Update interview status to cancelled
     await Interview.findByIdAndUpdate(interviewId, {
       status: 'cancelled',
-      completedAt: new Date(),
-      updatedAt: new Date()
+      completedAt: new Date()
     });
 
     // Reorder the queue after cancelling
@@ -536,8 +534,7 @@ async function reorderQueueWithSession(
     // Update queue positions based on the sorted order
     for (let i = 0; i < waitingInterviews.length; i++) {
       await Interview.findByIdAndUpdate(waitingInterviews[i]._id, {
-        queuePosition: i + 1,
-        updatedAt: new Date()
+        queuePosition: i + 1
       }, { session });
     }
 

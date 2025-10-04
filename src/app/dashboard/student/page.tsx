@@ -10,6 +10,7 @@ interface StudentStats {
   totalQueues: number;
   activeInterviews: number;
   completedToday: number;
+  totalCompleted: number;
   waitingQueues: number;
   totalCompanies: number;
   averageDuration: number;
@@ -199,9 +200,9 @@ export default function StudentDashboard() {
                   </svg>
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-800">Files d'Attente</h3>
+                  <h3 className="text-lg font-semibold text-gray-800">Files Actives</h3>
                   <p className="text-2xl font-bold text-[#2880CA]">{stats.totalQueues}</p>
-                  <p className="text-sm text-gray-600">Total rejointes</p>
+                  <p className="text-sm text-gray-600">En cours d'attente</p>
                 </div>
               </div>
             </div>
@@ -245,8 +246,8 @@ export default function StudentDashboard() {
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-gray-800">Terminés</h3>
-                  <p className="text-2xl font-bold text-purple-600">{stats.completedToday}</p>
-                  <p className="text-sm text-gray-600">Aujourd'hui</p>
+                  <p className="text-2xl font-bold text-purple-600">{stats.totalCompleted}</p>
+                  <p className="text-sm text-gray-600">Total ({stats.completedToday} aujourd'hui)</p>
                 </div>
               </div>
             </div>

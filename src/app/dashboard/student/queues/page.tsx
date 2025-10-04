@@ -61,8 +61,12 @@ export default function StudentQueuesPage() {
 
   // Track position changes and show notifications
   useEffect(() => {
-    if (queues.length === 0) return;
+    if (queues.length === 0) {
+      setShowPositionBanner(null);
+      return;
+    }
 
+    // Check for position improvements and show notifications
     queues.forEach((queue: Queue) => {
       const previousPosition = previousPositions[queue._id];
       
@@ -70,15 +74,6 @@ export default function StudentQueuesPage() {
         if (queue.position < previousPosition) {
           toast.success(`Vous avez avancé ! Maintenant position #${queue.position}`);
         }
-      }
-
-      // Update position banner based on current position
-      if (queue.position === 1 && queue.status === 'waiting') {
-        setShowPositionBanner({ queueId: queue._id, position: queue.position, room: queue.room });
-      } else if (queue.position <= 3 && queue.status === 'waiting') {
-        setShowPositionBanner({ queueId: queue._id, position: queue.position, room: queue.room });
-      } else {
-        setShowPositionBanner(null);
       }
     });
 
@@ -88,7 +83,31 @@ export default function StudentQueuesPage() {
       newPreviousPositions[queue._id] = queue.position;
     });
     setPreviousPositions(newPreviousPositions);
-  }, [queues, previousPositions]);
+  }, [queues]);
+
+  // Separate effect for position banner updates
+  useEffect(() => {
+    if (queues.length === 0) {
+      setShowPositionBanner(null);
+      return;
+    }
+
+    // Find the highest priority queue for banner display
+    const priorityQueue = queues.find(queue => 
+      queue.status === 'waiting' && queue.position <= 3
+    );
+
+    if (priorityQueue) {
+      const newBanner = { 
+        queueId: priorityQueue._id, 
+        position: priorityQueue.position, 
+        room: priorityQueue.room 
+      };
+      setShowPositionBanner(newBanner);
+    } else {
+      setShowPositionBanner(null);
+    }
+  }, [queues]);
 
   const handleLeaveQueue = async (queueId: string) => {
     setLeavingQueueId(queueId);
@@ -319,6 +338,24 @@ export default function StudentQueuesPage() {
           </p>
         </div>
 
+        {/* Queues Summary */}
+        {!isLoading && queues.length > 0 && (
+          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Mes Files d'Attente</h2>
+                <p className="text-gray-600 mt-1">
+                  {queues.length} file{queues.length > 1 ? 's' : ''} d'attente active{queues.length > 1 ? 's' : ''}
+                </p>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="text-sm text-gray-600">Mise à jour automatique</span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Queues List */}
         {isLoading ? (
           <div className="text-center py-12">
@@ -326,25 +363,41 @@ export default function StudentQueuesPage() {
             <p className="mt-4 text-gray-600">Chargement des files d'attente...</p>
           </div>
         ) : queues.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-lg shadow-md">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+          <div className="text-center py-16 bg-white rounded-lg shadow-md">
+            <div className="w-32 h-32 bg-gradient-to-br from-blue-50 to-blue-100 rounded-full flex items-center justify-center mx-auto mb-8">
+              <svg className="w-16 h-16 text-[#2880CA]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
               </svg>
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Aucune file d'attente</h3>
-            <p className="text-gray-600 mb-4">Vous n'avez rejoint aucune file d'attente pour le moment.</p>
-            <button
-              onClick={() => router.push('/dashboard/student/companies')}
-              className="bg-[#2880CA] hover:bg-[#1e5f8a] text-white font-semibold py-2 px-4 rounded-lg transition-colors"
-            >
-              Découvrir les entreprises
-            </button>
+            <h3 className="text-2xl font-bold text-gray-900 mb-3">Aucune file d'attente active</h3>
+            <p className="text-lg text-gray-600 mb-8 max-w-md mx-auto">
+              Vous n'êtes actuellement dans aucune file d'attente. Rejoignez une file pour commencer vos entretiens !
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <button
+                onClick={() => router.push('/dashboard/student/companies')}
+                className="bg-[#2880CA] hover:bg-[#1e5f8a] text-white px-8 py-4 rounded-lg transition-colors inline-flex items-center justify-center font-semibold shadow-lg hover:shadow-xl"
+              >
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+                Parcourir les entreprises
+              </button>
+              <button
+                onClick={() => router.push('/dashboard/student/history')}
+                className="bg-white hover:bg-gray-50 text-[#2880CA] border-2 border-[#2880CA] px-8 py-4 rounded-lg transition-colors inline-flex items-center justify-center font-semibold"
+              >
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Voir l'historique
+              </button>
+            </div>
           </div>
         ) : (
           <div className="space-y-6">
             {queues.map((queue) => (
-              <div key={queue._id} className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
+              <div key={queue._id} className="bg-white rounded-lg shadow-lg p-6 border border-gray-200 hover:shadow-xl transition-shadow duration-200">
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-2">

@@ -100,9 +100,7 @@ async function atomicCreateInterview(
           status: 'waiting',
           priorityScore,
           opportunityType,
-          joinedAt: new Date(),
-          createdAt: new Date(),
-          updatedAt: new Date()
+          joinedAt: new Date()
         }
       },
       {
@@ -116,26 +114,43 @@ async function atomicCreateInterview(
     // If result is null, it means no existing record was found and no new one was created
     // This indicates the student is not already in the queue
     if (result === null) {
-      // Create new interview record
+      // Get current queue length to set initial position
+      const currentQueueLength = await Interview.countDocuments({
+        companyId: new mongoose.Types.ObjectId(companyId),
+        status: 'waiting'
+      }).session(session);
+
+      // Create new interview record with temporary position
       const newInterview = new Interview({
         studentId: new mongoose.Types.ObjectId(studentId),
         companyId: new mongoose.Types.ObjectId(companyId),
         status: 'waiting',
+        queuePosition: currentQueueLength + 1, // Temporary position, will be updated by atomicUpdateQueuePosition
         priorityScore,
         opportunityType,
         joinedAt: new Date()
       });
 
-      await newInterview.save({ session });
-      return { success: true, interview: newInterview };
+      try {
+        await newInterview.save({ session });
+        return { success: true, interview: newInterview };
+      } catch (saveError) {
+        console.error('Error saving new interview:', saveError);
+        if (saveError instanceof mongoose.Error.ValidationError) {
+          return { success: false, error: `Erreur de validation lors de la création: ${saveError.message}` };
+        }
+        throw saveError;
+      }
     } else {
       // Student is already in the queue
       return { success: false, error: 'Vous êtes déjà dans la file d\'attente pour cette entreprise' };
     }
   } catch (error) {
     if (error instanceof mongoose.Error.ValidationError) {
-      return { success: false, error: 'Données invalides pour l\'entretien' };
+      console.error('Validation error in atomicCreateInterview:', error.message);
+      return { success: false, error: `Données invalides pour l'entretien: ${error.message}` };
     }
+    console.error('Error in atomicCreateInterview:', error);
     throw error;
   }
 }
@@ -160,7 +175,7 @@ async function atomicUpdateQueuePosition(
     const updatePromises = waitingInterviews.map((interview, index) => 
       Interview.findByIdAndUpdate(
         interview._id,
-        { queuePosition: index + 1, updatedAt: new Date() },
+        { queuePosition: index + 1 },
         { session }
       )
     );
@@ -357,8 +372,7 @@ export async function leaveQueueAtomic(interviewId: string, studentId: string): 
           status: 'waiting'
         },
         {
-          status: 'cancelled',
-          updatedAt: new Date()
+          status: 'cancelled'
         },
         { session, new: true }
       );
@@ -431,8 +445,7 @@ export async function startInterviewAtomic(interviewId: string, committeeUserId:
         },
         {
           status: 'in_progress',
-          startedAt: new Date(),
-          updatedAt: new Date()
+          startedAt: new Date()
         },
         { session, new: true }
       );
@@ -505,8 +518,7 @@ export async function endInterviewAtomic(interviewId: string, committeeUserId: s
         },
         {
           status: 'completed',
-          completedAt: new Date(),
-          updatedAt: new Date()
+          completedAt: new Date()
         },
         { session, new: true }
       );
@@ -576,8 +588,7 @@ export async function passInterviewAtomic(interviewId: string, committeeUserId: 
         },
         {
           status: 'passed',
-          passedAt: new Date(),
-          updatedAt: new Date()
+          passedAt: new Date()
         },
         { session, new: true }
       );
@@ -645,8 +656,7 @@ export async function moveToNextStudentAtomic(companyId: string, committeeUserId
         // Pass the current interview first
         await Interview.findByIdAndUpdate(currentInterview._id, {
           status: 'passed',
-          passedAt: new Date(),
-          updatedAt: new Date()
+          passedAt: new Date()
         }, { session });
       }
 
@@ -669,8 +679,7 @@ export async function moveToNextStudentAtomic(companyId: string, committeeUserId
       // Start the next interview
       await Interview.findByIdAndUpdate(nextInterview._id, {
         status: 'in_progress',
-        startedAt: new Date(),
-        updatedAt: new Date()
+        startedAt: new Date()
       }, { session });
 
       // Update queue positions

@@ -21,9 +21,10 @@ export async function GET() {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    // Get total queues joined
+    // Get total active queues (waiting + in_progress)
     const totalQueues = await Interview.countDocuments({
       studentId: session.user.id,
+      status: { $in: ['waiting', 'in_progress'] }
     });
 
     // Get active interviews (in progress)
@@ -40,6 +41,12 @@ export async function GET() {
         $gte: today,
         $lt: tomorrow
       }
+    });
+
+    // Get total completed interviews (all time)
+    const totalCompleted = await Interview.countDocuments({
+      studentId: session.user.id,
+      status: { $in: ['completed', 'cancelled'] }
     });
 
     // Get waiting queues
@@ -66,6 +73,7 @@ export async function GET() {
         totalQueues,
         activeInterviews,
         completedToday,
+        totalCompleted,
         waitingQueues,
         totalCompanies,
         averageDuration
