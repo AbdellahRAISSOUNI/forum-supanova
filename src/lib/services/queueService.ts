@@ -3,6 +3,19 @@ import Interview from '../models/Interview';
 import User from '../models/User';
 import Company from '../models/Company';
 import mongoose from 'mongoose';
+import { withTransaction } from '../utils/transactions';
+import {
+  ValidationError,
+  NotFoundError,
+  ConflictError,
+  ForbiddenError,
+  QueueConflictError,
+  DatabaseError,
+  handleError,
+  validateObjectId,
+  validateRequired,
+  validateEnum
+} from '../errors/QueueErrors';
 
 export interface QueuePosition {
   _id: string;
@@ -58,6 +71,72 @@ export function calculatePriorityScore(user: any, opportunityType: string): numb
 }
 
 /**
+ * Check for conflicts when joining multiple queues
+ */
+export async function checkQueueConflicts(
+  studentId: string,
+  companyId: string
+): Promise<{
+  canJoin: boolean;
+  conflicts: string[];
+  message: string;
+}> {
+  try {
+    await connectDB();
+
+    // Validate inputs
+    validateObjectId(studentId, 'ID étudiant');
+    validateObjectId(companyId, 'ID entreprise');
+
+    // Check for existing in-progress interviews
+    const inProgressInterviews = await Interview.find({
+      studentId,
+      status: 'in_progress'
+    }).populate('companyId', 'name room');
+
+    if (inProgressInterviews.length > 0) {
+      const conflicts = inProgressInterviews.map((i: any) => i.companyId.name);
+      throw new QueueConflictError(
+        'Vous avez déjà un entretien en cours',
+        conflicts
+      );
+    }
+
+    // Check for upcoming interviews (next 3 positions) that might conflict
+    const upcomingInterviews = await Interview.find({
+      studentId,
+      status: 'waiting',
+      queuePosition: { $lte: 3 }
+    }).populate('companyId', 'name room');
+
+    if (upcomingInterviews.length > 0) {
+      const conflicts = upcomingInterviews.map((i: any) => i.companyId.name);
+      throw new QueueConflictError(
+        'Vous avez des entretiens prioritaires en attente (position ≤ 3)',
+        conflicts
+      );
+    }
+
+    return { canJoin: true, conflicts: [], message: 'OK' };
+  } catch (error) {
+    if (error instanceof QueueConflictError) {
+      return {
+        canJoin: false,
+        conflicts: error.conflicts,
+        message: error.message
+      };
+    }
+    
+    console.error('Error checking queue conflicts:', error);
+    return {
+      canJoin: false,
+      conflicts: [],
+      message: 'Erreur lors de la vérification des conflits'
+    };
+  }
+}
+
+/**
  * Join a queue for a specific company
  */
 export async function joinQueue(
@@ -68,15 +147,13 @@ export async function joinQueue(
   try {
     await connectDB();
 
-    // Validate ObjectIds
-    if (!mongoose.Types.ObjectId.isValid(studentId) || !mongoose.Types.ObjectId.isValid(companyId)) {
-      return {
-        success: false,
-        message: 'ID invalide'
-      };
-    }
+    // Validate inputs
+    validateObjectId(studentId, 'ID étudiant');
+    validateObjectId(companyId, 'ID entreprise');
+    validateRequired(opportunityType, 'Type d\'opportunité');
+    validateEnum(opportunityType, ['pfa', 'pfe', 'employment', 'observation'], 'Type d\'opportunité');
 
-    // Check if student already in queue for this company
+    // Pre-validation checks (outside transaction for performance)
     const existingInterview = await Interview.findOne({
       studentId,
       companyId,
@@ -84,84 +161,81 @@ export async function joinQueue(
     });
 
     if (existingInterview) {
-      return {
-        success: false,
-        message: 'Vous êtes déjà dans la file d\'attente pour cette entreprise'
-      };
+      throw new ConflictError('Vous êtes déjà dans la file d\'attente pour cette entreprise');
     }
 
-    // Get student from database
-    const student = await User.findById(studentId);
-    if (!student) {
-      return {
-        success: false,
-        message: 'Étudiant non trouvé'
-      };
+    // Check for conflicts with other queues
+    const conflictCheck = await checkQueueConflicts(studentId, companyId);
+    if (!conflictCheck.canJoin) {
+      throw new QueueConflictError(
+        `${conflictCheck.message}. Conflits avec: ${conflictCheck.conflicts.join(', ')}`,
+        conflictCheck.conflicts
+      );
     }
 
-    // Check if company exists and is active
-    const company = await Company.findById(companyId);
-    if (!company) {
+    // Execute the main operation within a transaction
+    const result = await withTransaction(async (session) => {
+      // Get student from database
+      const student = await User.findById(studentId).session(session);
+      if (!student) {
+        throw new NotFoundError('Étudiant non trouvé');
+      }
+
+      // Check if company exists and is active
+      const company = await Company.findById(companyId).session(session);
+      if (!company) {
+        throw new NotFoundError('Entreprise non trouvée');
+      }
+
+      if (!company.isActive) {
+        throw new ConflictError('Cette entreprise n\'est plus active');
+      }
+
+      // Calculate priority score
+      const priorityScore = calculatePriorityScore(student, opportunityType);
+
+      // Count current queue size for company
+      const queueCount = await Interview.countDocuments({
+        companyId,
+        status: 'waiting'
+      }).session(session);
+
+      // Create new interview record
+      const newInterview = new Interview({
+        studentId,
+        companyId,
+        status: 'waiting',
+        queuePosition: queueCount + 1, // Will be corrected by reorderQueue
+        priorityScore,
+        opportunityType,
+        joinedAt: new Date()
+      });
+
+      await newInterview.save({ session });
+
+      // Reorder the queue after adding the new student
+      const reorderResult = await reorderQueueWithSession(companyId, session);
+      
+      if (!reorderResult.success) {
+        throw new DatabaseError(`Failed to reorder queue: ${reorderResult.message}`);
+      }
+
+      // Get the updated position after reordering
+      const updatedInterview = await Interview.findById(newInterview._id).session(session);
+      const finalPosition = updatedInterview?.queuePosition || queueCount + 1;
+
       return {
-        success: false,
-        message: 'Entreprise non trouvée'
+        success: true,
+        message: 'Vous avez rejoint la file d\'attente avec succès',
+        position: finalPosition,
+        interviewId: newInterview._id.toString()
       };
-    }
-
-    if (!company.isActive) {
-      return {
-        success: false,
-        message: 'Cette entreprise n\'est plus active'
-      };
-    }
-
-    // Calculate priority score
-    const priorityScore = calculatePriorityScore(student, opportunityType);
-
-    // Count current queue size for company
-    const queueCount = await Interview.countDocuments({
-      companyId,
-      status: 'waiting'
     });
 
-    // Create new interview record
-    const newInterview = new Interview({
-      studentId,
-      companyId,
-      status: 'waiting',
-      queuePosition: queueCount + 1,
-      priorityScore,
-      opportunityType,
-      joinedAt: new Date()
-    });
-
-    await newInterview.save();
-
-    // Reorder the queue after adding the new student
-    const reorderResult = await reorderQueue(companyId);
-    
-    if (!reorderResult.success) {
-      console.error('Failed to reorder queue:', reorderResult.message);
-      // Still return success for the join operation, but log the reorder failure
-    }
-
-    // Get the updated position after reordering
-    const updatedInterview = await Interview.findById(newInterview._id);
-    const finalPosition = updatedInterview?.queuePosition || queueCount + 1;
-
-    return {
-      success: true,
-      message: 'Vous avez rejoint la file d\'attente avec succès',
-      position: finalPosition,
-      interviewId: newInterview._id.toString()
-    };
+    return result;
 
   } catch (error) {
-    console.error('Error joining queue:', error);
-    return {
-      success: false,
-      message: 'Erreur interne du serveur'
-    };
+    return handleError(error);
   }
 }
 
@@ -206,6 +280,56 @@ export async function leaveQueue(interviewId: string, studentId: string): Promis
   try {
     await connectDB();
 
+    // Validate inputs
+    validateObjectId(interviewId, 'ID entretien');
+    validateObjectId(studentId, 'ID étudiant');
+
+    // Execute the operation within a transaction
+    const result = await withTransaction(async (session) => {
+      // Find the interview
+      const interview = await Interview.findOne({
+        _id: interviewId,
+        studentId,
+        status: 'waiting'
+      }).session(session);
+
+      if (!interview) {
+        throw new NotFoundError('Interview non trouvée ou déjà traitée');
+      }
+
+      // Update interview status to cancelled
+      await Interview.findByIdAndUpdate(interviewId, {
+        status: 'cancelled',
+        updatedAt: new Date()
+      }, { session });
+
+      // Reorder the queue after leaving
+      const reorderResult = await reorderQueueWithSession(interview.companyId.toString(), session);
+      
+      if (!reorderResult.success) {
+        throw new DatabaseError(`Failed to reorder queue after leaving: ${reorderResult.message}`);
+      }
+
+      return {
+        success: true,
+        message: 'Vous avez quitté la file d\'attente avec succès'
+      };
+    });
+
+    return result;
+
+  } catch (error) {
+    return handleError(error);
+  }
+}
+
+/**
+ * Reschedule an interview (move to end of queue)
+ */
+export async function rescheduleInterview(interviewId: string, studentId: string): Promise<JoinQueueResult> {
+  try {
+    await connectDB();
+
     if (!mongoose.Types.ObjectId.isValid(interviewId) || !mongoose.Types.ObjectId.isValid(studentId)) {
       return {
         success: false,
@@ -227,27 +351,97 @@ export async function leaveQueue(interviewId: string, studentId: string): Promis
       };
     }
 
-    // Update interview status to cancelled
+    // Check if student is in position 1 (about to be called)
+    if (interview.queuePosition === 1) {
+      return {
+        success: false,
+        message: 'Impossible de reporter un entretien en position 1. Veuillez annuler à la place.'
+      };
+    }
+
+    // Get the last position in the queue
+    const lastPosition = await Interview.countDocuments({
+      companyId: interview.companyId,
+      status: 'waiting'
+    });
+
+    // Update interview to move to end of queue
     await Interview.findByIdAndUpdate(interviewId, {
-      status: 'cancelled',
+      queuePosition: lastPosition,
+      joinedAt: new Date(), // Update join time to reflect rescheduling
       updatedAt: new Date()
     });
 
-    // Reorder the queue after leaving
+    // Reorder the queue to maintain proper positions
     const reorderResult = await reorderQueue(interview.companyId.toString());
     
     if (!reorderResult.success) {
-      console.error('Failed to reorder queue after leaving:', reorderResult.message);
-      // Still return success for the leave operation, but log the reorder failure
+      console.error('Failed to reorder queue after rescheduling:', reorderResult.message);
     }
 
     return {
       success: true,
-      message: 'Vous avez quitté la file d\'attente avec succès'
+      message: 'Entretien reporté avec succès. Vous êtes maintenant en fin de file.'
     };
 
   } catch (error) {
-    console.error('Error leaving queue:', error);
+    console.error('Error rescheduling interview:', error);
+    return {
+      success: false,
+      message: 'Erreur interne du serveur'
+    };
+  }
+}
+
+/**
+ * Cancel an interview (different from leaving - marks as cancelled but keeps in history)
+ */
+export async function cancelInterview(interviewId: string, studentId: string, reason?: string): Promise<JoinQueueResult> {
+  try {
+    await connectDB();
+
+    if (!mongoose.Types.ObjectId.isValid(interviewId) || !mongoose.Types.ObjectId.isValid(studentId)) {
+      return {
+        success: false,
+        message: 'ID invalide'
+      };
+    }
+
+    // Find the interview
+    const interview = await Interview.findOne({
+      _id: interviewId,
+      studentId,
+      status: { $in: ['waiting', 'in_progress'] }
+    });
+
+    if (!interview) {
+      return {
+        success: false,
+        message: 'Interview non trouvée ou déjà terminée'
+      };
+    }
+
+    // Update interview status to cancelled
+    await Interview.findByIdAndUpdate(interviewId, {
+      status: 'cancelled',
+      completedAt: new Date(),
+      updatedAt: new Date()
+    });
+
+    // Reorder the queue after cancelling
+    const reorderResult = await reorderQueue(interview.companyId.toString());
+    
+    if (!reorderResult.success) {
+      console.error('Failed to reorder queue after cancelling:', reorderResult.message);
+    }
+
+    return {
+      success: true,
+      message: 'Entretien annulé avec succès'
+    };
+
+  } catch (error) {
+    console.error('Error cancelling interview:', error);
     return {
       success: false,
       message: 'Erreur interne du serveur'
@@ -293,28 +487,49 @@ export async function getStudentQueues(studentId: string): Promise<any[]> {
 }
 
 /**
- * Recalculate queue positions after someone leaves
+ * Get student's interview history
  */
-async function recalculateQueuePositions(companyId: string): Promise<void> {
+export async function getStudentInterviewHistory(studentId: string): Promise<any[]> {
   try {
-    const interviews = await Interview.find({
-      companyId,
-      status: 'waiting'
-    })
-      .sort({ priorityScore: 1, joinedAt: 1 });
+    await connectDB();
 
-    // Update positions
-    for (let i = 0; i < interviews.length; i++) {
-      await Interview.findByIdAndUpdate(interviews[i]._id, {
-        queuePosition: i + 1,
-        updatedAt: new Date()
-      });
+    if (!mongoose.Types.ObjectId.isValid(studentId)) {
+      return [];
     }
 
+    const interviews = await Interview.find({
+      studentId,
+      status: { $in: ['completed', 'cancelled', 'passed'] }
+    })
+      .populate('companyId', 'name room sector website')
+      .sort({ updatedAt: -1 }) // Most recent first
+      .lean();
+
+    return interviews.map((interview: any) => ({
+      _id: interview._id.toString(),
+      companyName: interview.companyId.name,
+      companySector: interview.companyId.sector,
+      companyWebsite: interview.companyId.website,
+      room: interview.companyId.room,
+      opportunityType: interview.opportunityType,
+      status: interview.status,
+      joinedAt: interview.joinedAt,
+      startedAt: interview.startedAt,
+      completedAt: interview.completedAt,
+      passedAt: interview.passedAt,
+      finalPosition: interview.queuePosition,
+      priorityScore: interview.priorityScore,
+      duration: interview.startedAt && interview.completedAt 
+        ? Math.round((new Date(interview.completedAt).getTime() - new Date(interview.startedAt).getTime()) / 60000)
+        : null,
+    }));
+
   } catch (error) {
-    console.error('Error recalculating queue positions:', error);
+    console.error('Error getting student interview history:', error);
+    return [];
   }
 }
+
 
 /**
  * Get queue statistics for a company
@@ -364,80 +579,209 @@ export async function startInterview(interviewId: string, committeeUserId: strin
   try {
     await connectDB();
 
-    if (!mongoose.Types.ObjectId.isValid(interviewId) || !mongoose.Types.ObjectId.isValid(committeeUserId)) {
-      return {
-        success: false,
-        message: 'ID invalide'
-      };
-    }
+    // Validate inputs
+    validateObjectId(interviewId, 'ID entretien');
+    validateObjectId(committeeUserId, 'ID membre comité');
 
-    // Get committee member
-    const committeeMember = await User.findById(committeeUserId);
-    if (!committeeMember || committeeMember.role !== 'committee') {
-      return {
-        success: false,
-        message: 'Membre du comité non trouvé'
-      };
-    }
+    // Execute the operation within a transaction
+    const result = await withTransaction(async (session) => {
+      // Get committee member
+      const committeeMember = await User.findById(committeeUserId).session(session);
+      if (!committeeMember || committeeMember.role !== 'committee') {
+        throw new NotFoundError('Membre du comité non trouvé');
+      }
 
-    // Get interview
-    const interview = await Interview.findById(interviewId)
-      .populate('companyId', 'room name')
-      .populate('studentId', 'firstName name studentStatus role');
-    
-    if (!interview) {
-      return {
-        success: false,
-        message: 'Entretien non trouvé'
-      };
-    }
+      // Get interview
+      const interview = await Interview.findById(interviewId)
+        .populate('companyId', 'room name')
+        .populate('studentId', 'firstName name studentStatus role')
+        .session(session);
+      
+      if (!interview) {
+        throw new NotFoundError('Entretien non trouvé');
+      }
 
-    // Verify committee member has access to this room
-    if (committeeMember.assignedRoom !== interview.companyId.room) {
-      return {
-        success: false,
-        message: 'Vous n\'avez pas accès à cette salle'
-      };
-    }
+      // Verify committee member has access to this room
+      if (committeeMember.assignedRoom !== interview.companyId.room) {
+        throw new ForbiddenError('Vous n\'avez pas accès à cette salle');
+      }
 
-    // Check interview status
-    if (interview.status !== 'waiting') {
-      return {
-        success: false,
-        message: 'Cet entretien n\'est pas en attente'
-      };
-    }
+      // Check interview status
+      if (interview.status !== 'waiting') {
+        throw new ConflictError('Cet entretien n\'est pas en attente');
+      }
 
-    // Check if there's already an interview in progress for this company
-    const inProgressInterview = await Interview.findOne({
-      companyId: interview.companyId._id,
-      status: 'in_progress'
+      // Check if there's already an interview in progress for this company
+      const inProgressInterview = await Interview.findOne({
+        companyId: interview.companyId._id,
+        status: 'in_progress'
+      }).session(session);
+
+      if (inProgressInterview) {
+        throw new ConflictError('Un entretien est déjà en cours pour cette entreprise');
+      }
+
+      // Update interview status
+      await Interview.findByIdAndUpdate(interviewId, {
+        status: 'in_progress',
+        startedAt: new Date(),
+        updatedAt: new Date()
+      }, { session });
+
+      return {
+        success: true,
+        message: 'Entretien démarré avec succès'
+      };
     });
 
-    if (inProgressInterview) {
-      return {
-        success: false,
-        message: 'Un entretien est déjà en cours pour cette entreprise'
-      };
-    }
-
-    // Update interview status
-    await Interview.findByIdAndUpdate(interviewId, {
-      status: 'in_progress',
-      startedAt: new Date(),
-      updatedAt: new Date()
-    });
-
-    return {
-      success: true,
-      message: 'Entretien démarré avec succès'
-    };
+    return result;
   } catch (error) {
-    console.error('Error starting interview:', error);
-    return {
-      success: false,
-      message: 'Erreur interne du serveur'
-    };
+    return handleError(error);
+  }
+}
+
+/**
+ * Pass/Skip an interview (move to next student without completing)
+ */
+export async function passInterview(interviewId: string, committeeUserId: string): Promise<JoinQueueResult> {
+  try {
+    await connectDB();
+
+    // Validate inputs
+    validateObjectId(interviewId, 'ID entretien');
+    validateObjectId(committeeUserId, 'ID membre comité');
+
+    // Execute the operation within a transaction
+    const result = await withTransaction(async (session) => {
+      // Get committee member
+      const committeeMember = await User.findById(committeeUserId).session(session);
+      if (!committeeMember || committeeMember.role !== 'committee') {
+        throw new NotFoundError('Membre du comité non trouvé');
+      }
+
+      // Get interview
+      const interview = await Interview.findById(interviewId)
+        .populate('companyId', 'room name')
+        .populate('studentId', 'firstName name studentStatus role')
+        .session(session);
+      
+      if (!interview) {
+        throw new NotFoundError('Entretien non trouvé');
+      }
+
+      // Verify committee member has access to this room
+      if (committeeMember.assignedRoom !== interview.companyId.room) {
+        throw new ForbiddenError('Vous n\'avez pas accès à cette salle');
+      }
+
+      // Check interview status
+      if (interview.status !== 'in_progress') {
+        throw new ConflictError('Cet entretien n\'est pas en cours');
+      }
+
+      // Update interview status to passed
+      await Interview.findByIdAndUpdate(interviewId, {
+        status: 'passed',
+        passedAt: new Date(),
+        updatedAt: new Date()
+      }, { session });
+
+      // Reorder the queue after passing the interview
+      const reorderResult = await reorderQueueWithSession(interview.companyId._id.toString(), session);
+      
+      if (!reorderResult.success) {
+        throw new DatabaseError(`Failed to reorder queue after passing interview: ${reorderResult.message}`);
+      }
+
+      return {
+        success: true,
+        message: 'Entretien passé avec succès - Étudiant suivant dans la file'
+      };
+    });
+
+    return result;
+  } catch (error) {
+    return handleError(error);
+  }
+}
+
+/**
+ * Move to next student (skip current and start next interview)
+ */
+export async function moveToNextStudent(companyId: string, committeeUserId: string): Promise<JoinQueueResult> {
+  try {
+    await connectDB();
+
+    // Validate inputs
+    validateObjectId(companyId, 'ID entreprise');
+    validateObjectId(committeeUserId, 'ID membre comité');
+
+    // Execute the operation within a transaction
+    const result = await withTransaction(async (session) => {
+      // Get committee member
+      const committeeMember = await User.findById(committeeUserId).session(session);
+      if (!committeeMember || committeeMember.role !== 'committee') {
+        throw new NotFoundError('Membre du comité non trouvé');
+      }
+
+      // Get company
+      const company = await Company.findById(companyId).session(session);
+      if (!company) {
+        throw new NotFoundError('Entreprise non trouvée');
+      }
+
+      // Verify committee member has access to this room
+      if (committeeMember.assignedRoom !== company.room) {
+        throw new ForbiddenError('Vous n\'avez pas accès à cette salle');
+      }
+
+      // Check if there's an interview in progress
+      const currentInterview = await Interview.findOne({
+        companyId,
+        status: 'in_progress'
+      }).session(session);
+
+      if (currentInterview) {
+        // Pass the current interview first
+        await Interview.findByIdAndUpdate(currentInterview._id, {
+          status: 'passed',
+          passedAt: new Date(),
+          updatedAt: new Date()
+        }, { session });
+      }
+
+      // Get the next student in queue
+      const nextInterview = await Interview.findOne({
+        companyId,
+        status: 'waiting'
+      })
+      .populate('studentId', 'firstName name studentStatus role')
+      .sort({ priorityScore: 1, joinedAt: 1 })
+      .session(session);
+
+      if (!nextInterview) {
+        return {
+          success: true,
+          message: 'Aucun étudiant en attente dans cette file'
+        };
+      }
+
+      // Start the next interview
+      await Interview.findByIdAndUpdate(nextInterview._id, {
+        status: 'in_progress',
+        startedAt: new Date(),
+        updatedAt: new Date()
+      }, { session });
+
+      return {
+        success: true,
+        message: `Entretien démarré avec ${nextInterview.studentId.firstName} ${nextInterview.studentId.name}`
+      };
+    });
+
+    return result;
+  } catch (error) {
+    return handleError(error);
   }
 }
 
@@ -448,80 +792,66 @@ export async function endInterview(interviewId: string, committeeUserId: string)
   try {
     await connectDB();
 
-    if (!mongoose.Types.ObjectId.isValid(interviewId) || !mongoose.Types.ObjectId.isValid(committeeUserId)) {
-      return {
-        success: false,
-        message: 'ID invalide'
-      };
-    }
+    // Validate inputs
+    validateObjectId(interviewId, 'ID entretien');
+    validateObjectId(committeeUserId, 'ID membre comité');
 
-    // Get committee member
-    const committeeMember = await User.findById(committeeUserId);
-    if (!committeeMember || committeeMember.role !== 'committee') {
-      return {
-        success: false,
-        message: 'Membre du comité non trouvé'
-      };
-    }
+    // Execute the operation within a transaction
+    const result = await withTransaction(async (session) => {
+      // Get committee member
+      const committeeMember = await User.findById(committeeUserId).session(session);
+      if (!committeeMember || committeeMember.role !== 'committee') {
+        throw new NotFoundError('Membre du comité non trouvé');
+      }
 
-    // Get interview
-    const interview = await Interview.findById(interviewId)
-      .populate('companyId', 'room name')
-      .populate('studentId', 'firstName name studentStatus role');
-    
-    if (!interview) {
-      return {
-        success: false,
-        message: 'Entretien non trouvé'
-      };
-    }
+      // Get interview
+      const interview = await Interview.findById(interviewId)
+        .populate('companyId', 'room name')
+        .populate('studentId', 'firstName name studentStatus role')
+        .session(session);
+      
+      if (!interview) {
+        throw new NotFoundError('Entretien non trouvé');
+      }
 
-    // Verify committee member has access to this room
-    if (committeeMember.assignedRoom !== interview.companyId.room) {
-      return {
-        success: false,
-        message: 'Vous n\'avez pas accès à cette salle'
-      };
-    }
+      // Verify committee member has access to this room
+      if (committeeMember.assignedRoom !== interview.companyId.room) {
+        throw new ForbiddenError('Vous n\'avez pas accès à cette salle');
+      }
 
-    // Check interview status
-    if (interview.status !== 'in_progress') {
-      return {
-        success: false,
-        message: 'Cet entretien n\'est pas en cours'
-      };
-    }
+      // Check interview status
+      if (interview.status !== 'in_progress') {
+        throw new ConflictError('Cet entretien n\'est pas en cours');
+      }
 
-    // Update interview status
-    await Interview.findByIdAndUpdate(interviewId, {
-      status: 'completed',
-      completedAt: new Date(),
-      updatedAt: new Date()
+      // Update interview status
+      await Interview.findByIdAndUpdate(interviewId, {
+        status: 'completed',
+        completedAt: new Date(),
+        updatedAt: new Date()
+      }, { session });
+
+      // Reorder the queue after ending the interview
+      const reorderResult = await reorderQueueWithSession(interview.companyId._id.toString(), session);
+      
+      if (!reorderResult.success) {
+        throw new DatabaseError(`Failed to reorder queue after ending interview: ${reorderResult.message}`);
+      }
+
+      return {
+        success: true,
+        message: 'Entretien terminé avec succès'
+      };
     });
 
-    // Reorder the queue after ending the interview
-    const reorderResult = await reorderQueue(interview.companyId._id.toString());
-    
-    if (!reorderResult.success) {
-      console.error('Failed to reorder queue after ending interview:', reorderResult.message);
-      // Still return success for the end operation, but log the reorder failure
-    }
-
-    return {
-      success: true,
-      message: 'Entretien terminé avec succès'
-    };
+    return result;
   } catch (error) {
-    console.error('Error ending interview:', error);
-    return {
-      success: false,
-      message: 'Erreur interne du serveur'
-    };
+    return handleError(error);
   }
 }
 
 /**
- * Reorder queue based on intelligent priority rules
+ * Reorder queue based on consistent priority score system
  */
 export async function reorderQueue(companyId: string): Promise<{
   success: boolean;
@@ -530,7 +860,30 @@ export async function reorderQueue(companyId: string): Promise<{
 }> {
   try {
     await connectDB();
+    return await withTransaction(async (session) => {
+      return await reorderQueueWithSession(companyId, session);
+    });
+  } catch (error) {
+    console.error('Error reordering queue:', error);
+    return {
+      success: false,
+      message: 'Erreur lors de la réorganisation de la file d\'attente'
+    };
+  }
+}
 
+/**
+ * Reorder queue with session support for transactions
+ */
+async function reorderQueueWithSession(
+  companyId: string, 
+  session: mongoose.ClientSession
+): Promise<{
+  success: boolean;
+  message: string;
+  reorderedQueue?: any[];
+}> {
+  try {
     if (!mongoose.Types.ObjectId.isValid(companyId)) {
       return {
         success: false,
@@ -538,13 +891,14 @@ export async function reorderQueue(companyId: string): Promise<{
       };
     }
 
-    // Get all waiting interviews for the company
+    // Get all waiting interviews for the company, sorted by priority score and join time
     const waitingInterviews = await Interview.find({
       companyId,
       status: 'waiting'
     })
     .populate('studentId', 'firstName name studentStatus role')
-    .sort({ joinedAt: 1 }); // Sort by joinedAt first for initial ordering
+    .sort({ priorityScore: 1, joinedAt: 1 }) // Consistent with calculatePriorityScore logic
+    .session(session);
 
     if (waitingInterviews.length === 0) {
       return {
@@ -554,84 +908,16 @@ export async function reorderQueue(companyId: string): Promise<{
       };
     }
 
-    // Group interviews by priority category
-    const committeeInterviews = waitingInterviews.filter((interview: any) => 
-      interview.studentId.role === 'committee'
-    );
-    const ensaInterviews = waitingInterviews.filter((interview: any) => 
-      interview.studentId.role === 'student' && interview.studentId.studentStatus === 'ensa'
-    );
-    const externalInterviews = waitingInterviews.filter((interview: any) => 
-      interview.studentId.role === 'student' && interview.studentId.studentStatus === 'external'
-    );
-
-    // Sort each group by opportunity type priority, then by joinedAt
-    const sortByPriority = (interviews: any[]) => {
-      return interviews.sort((a, b) => {
-        // First sort by opportunity type priority
-        const opportunityPriority = {
-          'pfa': 1,
-          'pfe': 1,
-          'employment': 2,
-          'observation': 3
-        };
-        
-        const aPriority = opportunityPriority[a.opportunityType] || 4;
-        const bPriority = opportunityPriority[b.opportunityType] || 4;
-        
-        if (aPriority !== bPriority) {
-          return aPriority - bPriority;
-        }
-        
-        // Then sort by joinedAt (earlier = higher priority)
-        return new Date(a.joinedAt).getTime() - new Date(b.joinedAt).getTime();
-      });
-    };
-
-    const sortedCommittee = sortByPriority(committeeInterviews);
-    const sortedEnsa = sortByPriority(ensaInterviews);
-    const sortedExternal = sortByPriority(externalInterviews);
-
-    // Apply alternating pattern: 3 committee, 2 external, 2 ensa, repeat
-    const reorderedInterviews: any[] = [];
-    
-    let committeeIndex = 0;
-    let ensaIndex = 0;
-    let externalIndex = 0;
-
-    while (committeeIndex < sortedCommittee.length || 
-           ensaIndex < sortedEnsa.length || 
-           externalIndex < sortedExternal.length) {
-      
-      // Add 3 committee members (if available)
-      for (let i = 0; i < 3 && committeeIndex < sortedCommittee.length; i++) {
-        reorderedInterviews.push(sortedCommittee[committeeIndex]);
-        committeeIndex++;
-      }
-      
-      // Add 2 external students (if available)
-      for (let i = 0; i < 2 && externalIndex < sortedExternal.length; i++) {
-        reorderedInterviews.push(sortedExternal[externalIndex]);
-        externalIndex++;
-      }
-      
-      // Add 2 ENSA students (if available)
-      for (let i = 0; i < 2 && ensaIndex < sortedEnsa.length; i++) {
-        reorderedInterviews.push(sortedEnsa[ensaIndex]);
-        ensaIndex++;
-      }
-    }
-
-    // Update queue positions in database
-    for (let i = 0; i < reorderedInterviews.length; i++) {
-      await Interview.findByIdAndUpdate(reorderedInterviews[i]._id, {
+    // Update queue positions based on the sorted order
+    for (let i = 0; i < waitingInterviews.length; i++) {
+      await Interview.findByIdAndUpdate(waitingInterviews[i]._id, {
         queuePosition: i + 1,
         updatedAt: new Date()
-      });
+      }, { session });
     }
 
     // Format the reordered queue for response
-    const reorderedQueue = reorderedInterviews.map((interview: any, index: number) => ({
+    const reorderedQueue = waitingInterviews.map((interview: any, index: number) => ({
       interviewId: interview._id.toString(),
       studentName: `${interview.studentId.firstName} ${interview.studentId.name}`,
       studentStatus: interview.studentId.studentStatus,
@@ -648,7 +934,7 @@ export async function reorderQueue(companyId: string): Promise<{
       reorderedQueue
     };
   } catch (error) {
-    console.error('Error reordering queue:', error);
+    console.error('Error reordering queue with session:', error);
     return {
       success: false,
       message: 'Erreur lors de la réorganisation de la file d\'attente'

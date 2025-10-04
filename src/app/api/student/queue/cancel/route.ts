@@ -2,15 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { z } from 'zod';
-import { joinQueue } from '@/lib/services/queueService';
+import { cancelInterview } from '@/lib/services/queueService';
 import { handleError } from '@/lib/errors/QueueErrors';
 
-// Zod schema for join queue validation
-const joinQueueSchema = z.object({
-  companyId: z.string().min(1, 'ID de l\'entreprise requis'),
-  opportunityType: z.enum(['pfa', 'pfe', 'employment', 'observation'], {
-    message: 'Type d\'opportunité invalide'
-  }),
+// Zod schema for cancel validation
+const cancelSchema = z.object({
+  interviewId: z.string().min(1, 'ID de l\'entretien requis'),
+  reason: z.string().optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -28,7 +26,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     // Validate the request body
-    const validationResult = joinQueueSchema.safeParse(body);
+    const validationResult = cancelSchema.safeParse(body);
     if (!validationResult.success) {
       const errorResponse = handleError(new Error(
         validationResult.error.issues.map(issue => 
@@ -41,19 +39,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { companyId, opportunityType } = validationResult.data;
+    const { interviewId, reason } = validationResult.data;
 
-    // Join the queue
-    const result = await joinQueue(session.user.id, companyId, opportunityType);
+    // Cancel the interview
+    const result = await cancelInterview(interviewId, session.user.id, reason);
 
     if (result.success) {
       return NextResponse.json(
         {
-          message: result.message,
-          position: result.position,
-          interviewId: result.interviewId
+          message: result.message
         },
-        { status: 201 }
+        { status: 200 }
       );
     } else {
       return NextResponse.json(

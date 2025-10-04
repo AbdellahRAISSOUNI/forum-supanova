@@ -6,7 +6,35 @@ This guide covers common issues encountered during development and deployment of
 
 ## Development Issues
 
-### 1. MongoDB Connection Issues
+### 1. Admin Password Issues
+
+#### Problem: Forgot Admin Password
+
+**Symptoms:**
+- Cannot log in to admin dashboard
+- Authentication fails for admin@ensa.ma
+- Need to reset admin credentials
+
+**Solutions:**
+
+1. **Reset Admin Password**
+   ```bash
+   # Run the admin creation script to reset password
+   npm run seed:admin
+   ```
+
+2. **Verify Admin Credentials**
+   - Email: `admin@ensa.ma`
+   - Password: `Admin2025!`
+   - Role: `admin`
+
+3. **Check Database Connection**
+   ```bash
+   # Ensure MongoDB is accessible
+   npx tsx scripts/create-admin.ts
+   ```
+
+### 2. MongoDB Connection Issues
 
 #### Error: "Please define the MONGODB_URI environment variable"
 

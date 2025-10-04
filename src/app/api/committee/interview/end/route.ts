@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { endInterview } from '@/lib/services/queueService';
 import { z } from 'zod';
+import { handleError } from '@/lib/errors/QueueErrors';
 
 const endInterviewSchema = z.object({
   interviewId: z.string().min(1, 'ID d\'entretien requis'),
@@ -21,9 +22,14 @@ export async function POST(request: NextRequest) {
     const validationResult = endInterviewSchema.safeParse(body);
 
     if (!validationResult.success) {
+      const errorResponse = handleError(new Error(
+        validationResult.error.issues.map(issue => 
+          `${issue.path[0]}: ${issue.message}`
+        ).join(', ')
+      ));
       return NextResponse.json(
-        { error: 'Données invalides', details: validationResult.error.issues },
-        { status: 400 }
+        { error: errorResponse.message },
+        { status: errorResponse.statusCode }
       );
     }
 
@@ -36,7 +42,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ message: result.message }, { status: 200 });
   } catch (error) {
-    console.error('Error ending interview:', error);
-    return NextResponse.json({ error: 'Erreur interne du serveur' }, { status: 500 });
+    const errorResponse = handleError(error);
+    return NextResponse.json(
+      { error: errorResponse.message },
+      { status: errorResponse.statusCode }
+    );
   }
 }

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import RoomIndicator from '@/components/RoomIndicator';
 
 interface Company {
   _id: string;
@@ -190,7 +191,10 @@ export default function StudentCompaniesPage() {
               >
                 {/* Company Header */}
                 <div className="mb-4">
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">{company.name}</h3>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-xl font-semibold text-gray-900">{company.name}</h3>
+                    <RoomIndicator room={company.room} size="sm" />
+                  </div>
                   <div className="flex items-center text-sm text-gray-600 mb-2">
                     <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -203,12 +207,6 @@ export default function StudentCompaniesPage() {
 
                 {/* Company Details */}
                 <div className="space-y-3 mb-6">
-                  <div className="flex items-center text-sm text-gray-600">
-                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
-                    </svg>
-                    <span>Salle: <strong>{company.room}</strong></span>
-                  </div>
                   
                   <div className="flex items-center text-sm text-gray-600">
                     <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

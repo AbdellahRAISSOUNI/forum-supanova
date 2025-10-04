@@ -5,6 +5,7 @@ import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
+import RoomIndicator from '@/components/RoomIndicator';
 
 interface Queue {
   _id: string;
@@ -24,6 +25,8 @@ export default function StudentQueuesPage() {
   
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [leavingQueueId, setLeavingQueueId] = useState<string | null>(null);
+  const [reschedulingQueueId, setReschedulingQueueId] = useState<string | null>(null);
+  const [cancellingQueueId, setCancellingQueueId] = useState<string | null>(null);
   const [previousPositions, setPreviousPositions] = useState<Record<string, number>>({});
   const [showPositionBanner, setShowPositionBanner] = useState<{ queueId: string; position: number; room: string } | null>(null);
 
@@ -108,6 +111,62 @@ export default function StudentQueuesPage() {
       toast.error('Erreur de connexion au serveur');
     } finally {
       setLeavingQueueId(null);
+    }
+  };
+
+  const handleRescheduleInterview = async (queueId: string) => {
+    setReschedulingQueueId(queueId);
+    setMessage(null);
+
+    try {
+      const response = await fetch('/api/student/queue/reschedule', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ interviewId: queueId }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success(data.message);
+        refetch(); // Refresh the queues list
+      } else {
+        toast.error(data.error || 'Erreur lors du report de l\'entretien');
+      }
+    } catch (error) {
+      toast.error('Erreur de connexion au serveur');
+    } finally {
+      setReschedulingQueueId(null);
+    }
+  };
+
+  const handleCancelInterview = async (queueId: string) => {
+    setCancellingQueueId(queueId);
+    setMessage(null);
+
+    try {
+      const response = await fetch('/api/student/queue/cancel', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ interviewId: queueId }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success(data.message);
+        refetch(); // Refresh the queues list
+      } else {
+        toast.error(data.error || 'Erreur lors de l\'annulation de l\'entretien');
+      }
+    } catch (error) {
+      toast.error('Erreur de connexion au serveur');
+    } finally {
+      setCancellingQueueId(null);
     }
   };
 
@@ -217,7 +276,13 @@ export default function StudentQueuesPage() {
                 </div>
                 <div>
                   {showPositionBanner.position === 1 ? (
-                    <p className="font-semibold text-lg">Vous êtes le prochain ! Direction Salle {showPositionBanner.room}</p>
+                    <div>
+                      <p className="font-semibold text-lg">Vous êtes le prochain !</p>
+                      <div className="flex items-center mt-1">
+                        <span className="text-base">Direction </span>
+                        <RoomIndicator room={showPositionBanner.room} size="sm" className="ml-2" />
+                      </div>
+                    </div>
                   ) : (
                     <p className="font-semibold text-lg">Votre tour arrive bientôt ! Position #{showPositionBanner.position}</p>
                   )}
@@ -281,15 +346,12 @@ export default function StudentQueuesPage() {
             {queues.map((queue) => (
               <div key={queue._id} className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
                 <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">{queue.companyName}</h3>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-xl font-semibold text-gray-900">{queue.companyName}</h3>
+                      <RoomIndicator room={queue.room} size="sm" />
+                    </div>
                     <div className="flex items-center space-x-4 text-sm text-gray-600">
-                      <span className="flex items-center">
-                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
-                        </svg>
-                        Salle {queue.room}
-                      </span>
                       <span className="flex items-center">
                         <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -305,7 +367,7 @@ export default function StudentQueuesPage() {
                       {getPriorityBadge(session.user.role, session.user.studentStatus || 'external')}
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2 ml-4">
                     <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(queue.status)}`}>
                       {getStatusLabel(queue.status)}
                     </span>
@@ -362,20 +424,50 @@ export default function StudentQueuesPage() {
                   </div>
                 </div>
 
-                {/* Action Button */}
-                <div className="flex justify-end">
+                {/* Action Buttons */}
+                <div className="flex justify-end space-x-2">
                   {queue.status === 'in_progress' ? (
                     <div className="px-4 py-2 bg-green-100 text-green-800 rounded-md font-semibold">
                       Entretien en cours
                     </div>
+                  ) : queue.status === 'waiting' ? (
+                    <>
+                      {/* Reschedule button - only show if not in position 1 */}
+                      {queue.position > 1 && (
+                        <button
+                          onClick={() => handleRescheduleInterview(queue._id)}
+                          disabled={reschedulingQueueId === queue._id}
+                          className="px-3 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                          title="Reporter l'entretien à la fin de la file"
+                        >
+                          {reschedulingQueueId === queue._id ? 'Report...' : 'Reporter'}
+                        </button>
+                      )}
+                      
+                      {/* Cancel button */}
+                      <button
+                        onClick={() => handleCancelInterview(queue._id)}
+                        disabled={cancellingQueueId === queue._id}
+                        className="px-3 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                        title="Annuler l'entretien"
+                      >
+                        {cancellingQueueId === queue._id ? 'Annulation...' : 'Annuler'}
+                      </button>
+                      
+                      {/* Leave queue button */}
+                      <button
+                        onClick={() => handleLeaveQueue(queue._id)}
+                        disabled={leavingQueueId === queue._id}
+                        className="px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                        title="Quitter la file d'attente"
+                      >
+                        {leavingQueueId === queue._id ? 'Sortie...' : 'Quitter'}
+                      </button>
+                    </>
                   ) : (
-                    <button
-                      onClick={() => handleLeaveQueue(queue._id)}
-                      disabled={leavingQueueId === queue._id || queue.status !== 'waiting'}
-                      className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {leavingQueueId === queue._id ? 'Sortie...' : 'Quitter la file'}
-                    </button>
+                    <div className="px-4 py-2 bg-gray-100 text-gray-600 rounded-md font-semibold text-sm">
+                      {getStatusLabel(queue.status)}
+                    </div>
                   )}
                 </div>
               </div>

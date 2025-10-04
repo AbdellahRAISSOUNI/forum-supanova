@@ -3,13 +3,14 @@ import mongoose, { Document } from 'mongoose';
 export interface IInterview extends Document {
   studentId: mongoose.Types.ObjectId;
   companyId: mongoose.Types.ObjectId;
-  status: 'waiting' | 'in_progress' | 'completed' | 'cancelled';
+  status: 'waiting' | 'in_progress' | 'completed' | 'cancelled' | 'passed';
   queuePosition: number;
   priorityScore: number;
   opportunityType: 'pfa' | 'pfe' | 'employment' | 'observation';
   joinedAt: Date;
   startedAt?: Date;
   completedAt?: Date;
+  passedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -27,7 +28,7 @@ const interviewSchema = new mongoose.Schema<IInterview>({
   },
   status: {
     type: String,
-    enum: ['waiting', 'in_progress', 'completed', 'cancelled'],
+    enum: ['waiting', 'in_progress', 'completed', 'cancelled', 'passed'],
     default: 'waiting',
     required: true,
   },
@@ -55,6 +56,9 @@ const interviewSchema = new mongoose.Schema<IInterview>({
     type: Date,
   },
   completedAt: {
+    type: Date,
+  },
+  passedAt: {
     type: Date,
   },
 }, {

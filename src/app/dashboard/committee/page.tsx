@@ -189,6 +189,62 @@ export default function CommitteeDashboard() {
     }
   };
 
+  const passInterview = async (interviewId: string) => {
+    setIsActionLoading(true);
+    setMessage(null);
+
+    try {
+      const response = await fetch('/api/committee/interview/pass', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ interviewId }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success(data.message);
+        refetch(); // Refresh queue data
+      } else {
+        toast.error(data.error || 'Erreur lors du passage de l\'entretien');
+      }
+    } catch (error) {
+      toast.error('Erreur de connexion au serveur');
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
+  const moveToNextStudent = async (companyId: string) => {
+    setIsActionLoading(true);
+    setMessage(null);
+
+    try {
+      const response = await fetch('/api/committee/interview/next', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ companyId }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success(data.message);
+        refetch(); // Refresh queue data
+      } else {
+        toast.error(data.error || 'Erreur lors du passage à l\'étudiant suivant');
+      }
+    } catch (error) {
+      toast.error('Erreur de connexion au serveur');
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -306,13 +362,33 @@ export default function CommitteeDashboard() {
                     <div className="text-4xl font-mono font-bold text-green-600 mb-4">
                       {formatTime(elapsedTime)}
                     </div>
-                    <button
-                      onClick={() => endInterview(queueData.currentInterview!.interviewId)}
-                      disabled={isActionLoading}
-                      className="w-full bg-red-600 hover:bg-red-700 text-white px-8 py-4 rounded-lg text-lg font-semibold transition-colors disabled:opacity-50"
-                    >
-                      {isActionLoading ? 'Terminaison...' : 'Terminer l\'Entretien'}
-                    </button>
+                    <div className="space-y-3">
+                      <button
+                        onClick={() => endInterview(queueData.currentInterview!.interviewId)}
+                        disabled={isActionLoading}
+                        className="w-full bg-red-600 hover:bg-red-700 text-white px-8 py-4 rounded-lg text-lg font-semibold transition-colors disabled:opacity-50"
+                      >
+                        {isActionLoading ? 'Terminaison...' : 'Terminer l\'Entretien'}
+                      </button>
+                      
+                      <div className="grid grid-cols-2 gap-3">
+                        <button
+                          onClick={() => passInterview(queueData.currentInterview!.interviewId)}
+                          disabled={isActionLoading}
+                          className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-3 rounded-lg font-semibold transition-colors disabled:opacity-50"
+                        >
+                          {isActionLoading ? 'Passage...' : 'Passer'}
+                        </button>
+                        
+                        <button
+                          onClick={() => moveToNextStudent(queueData.company._id)}
+                          disabled={isActionLoading}
+                          className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-3 rounded-lg font-semibold transition-colors disabled:opacity-50"
+                        >
+                          {isActionLoading ? 'Suivant...' : 'Étudiant Suivant'}
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>

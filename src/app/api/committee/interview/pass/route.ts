@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { startInterview } from '@/lib/services/queueService';
+import { passInterview } from '@/lib/services/queueService';
 import { z } from 'zod';
 import { handleError } from '@/lib/errors/QueueErrors';
 
-const startInterviewSchema = z.object({
+const passInterviewSchema = z.object({
   interviewId: z.string().min(1, 'ID d\'entretien requis'),
 });
 
-// POST - Start an interview
+// POST - Pass/Skip an interview
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const validationResult = startInterviewSchema.safeParse(body);
+    const validationResult = passInterviewSchema.safeParse(body);
 
     if (!validationResult.success) {
       const errorResponse = handleError(new Error(
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { interviewId } = validationResult.data;
-    const result = await startInterview(interviewId, session.user.id);
+    const result = await passInterview(interviewId, session.user.id);
 
     if (!result.success) {
       return NextResponse.json({ error: result.message }, { status: 400 });

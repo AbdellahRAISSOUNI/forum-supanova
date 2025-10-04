@@ -33,7 +33,7 @@ npm install
 cp .env.example .env.local
 # Edit .env.local with your configuration
 
-# Create admin user
+# Create admin user (or reset password if admin exists)
 npm run seed:admin
 
 # Start development server
@@ -48,6 +48,37 @@ npm run dev
 - **Queue Update Notifications**: Alerts for students joining/leaving queues
 - **Visual Position Banners**: Color-coded banners for upcoming turns
 - **Sound Notifications**: Optional audio alerts for committee members
+
+## Enhanced Student Interface Features
+
+### Multiple Company Queue Management
+- **Conflict Prevention**: Intelligent system prevents overlapping interviews
+- **Queue Validation**: Automatic checks for in-progress interviews and priority positions
+- **Error Handling**: Detailed error messages with specific conflict information
+- **Implementation**: `checkQueueConflicts()` function in `queueService.ts`
+
+### Interview Reschedule & Cancel System
+- **Reschedule Functionality**: Move interviews to end of queue
+- **Cancel Operations**: Proper status tracking and history preservation
+- **Smart Validation**: Prevents rescheduling when in position 1
+- **API Endpoints**: 
+  - `POST /api/student/queue/reschedule`
+  - `POST /api/student/queue/cancel`
+- **UI Components**: Enhanced action buttons with loading states
+
+### Interview History Tracking
+- **Complete History**: All completed and cancelled interviews
+- **Filtering System**: Filter by status (all, completed, cancelled)
+- **Statistics Dashboard**: Total, completed, and cancelled counts
+- **Detailed Information**: Duration, final position, timestamps
+- **API Endpoint**: `GET /api/student/history`
+- **Page**: `/dashboard/student/history`
+
+### Enhanced Room Display
+- **RoomIndicator Component**: Reusable component for consistent room display
+- **Visual Hierarchy**: Prominent room badges across all interfaces
+- **Enhanced Banners**: Clear room direction in position notifications
+- **Implementation**: `src/components/RoomIndicator.tsx`
 
 ### Auto-refresh System
 - **React Query**: Efficient data fetching and caching

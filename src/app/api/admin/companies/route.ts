@@ -4,6 +4,14 @@ import { authOptions } from '@/lib/auth';
 import { z } from 'zod';
 import connectDB from '@/lib/db';
 import Company from '@/lib/models/Company';
+import { withTransaction } from '@/lib/utils/transactions';
+import {
+  ValidationError,
+  ConflictError,
+  DatabaseError,
+  handleError,
+  validateObjectId
+} from '@/lib/errors/QueueErrors';
 
 // Zod schema for company validation
 const companySchema = z.object({
@@ -50,15 +58,10 @@ export async function POST(request: NextRequest) {
     // Validate the request body
     const validationResult = companySchema.safeParse(body);
     if (!validationResult.success) {
-      return NextResponse.json(
-        {
-          error: 'Données invalides',
-          details: validationResult.error.issues.map(issue => ({
-            field: issue.path[0],
-            message: issue.message,
-          })),
-        },
-        { status: 400 }
+      throw new ValidationError(
+        validationResult.error.issues.map(issue => 
+          `${issue.path[0]}: ${issue.message}`
+        ).join(', ')
       );
     }
 
@@ -66,33 +69,41 @@ export async function POST(request: NextRequest) {
 
     await connectDB();
 
-    // Check if company with same name already exists
-    const existingCompany = await Company.findOne({ name: { $regex: new RegExp(`^${name}$`, 'i') } });
-    if (existingCompany) {
-      return NextResponse.json({ error: 'Une entreprise avec ce nom existe déjà' }, { status: 409 });
-    }
+    // Execute the operation within a transaction
+    const result = await withTransaction(async (session) => {
+      // Check if company with same name already exists
+      const existingCompany = await Company.findOne({ 
+        name: { $regex: new RegExp(`^${name}$`, 'i') } 
+      }).session(session);
+      
+      if (existingCompany) {
+        throw new ConflictError('Une entreprise avec ce nom existe déjà');
+      }
 
-    // Create new company
-    const newCompany = new Company({
-      name,
-      sector,
-      website,
-      room,
-      estimatedInterviewDuration,
-      isActive: true,
-    });
+      // Create new company
+      const newCompany = new Company({
+        name,
+        sector,
+        website,
+        room,
+        estimatedInterviewDuration,
+        isActive: true,
+      });
 
-    await newCompany.save();
+      await newCompany.save({ session });
 
-    return NextResponse.json(
-      { 
+      return {
         message: 'Entreprise créée avec succès',
         company: newCompany 
-      }, 
-      { status: 201 }
-    );
+      };
+    });
+
+    return NextResponse.json(result, { status: 201 });
   } catch (error) {
-    console.error('Error creating company:', error);
-    return NextResponse.json({ error: 'Erreur interne du serveur' }, { status: 500 });
+    const errorResponse = handleError(error);
+    return NextResponse.json(
+      { error: errorResponse.message },
+      { status: errorResponse.statusCode }
+    );
   }
 }

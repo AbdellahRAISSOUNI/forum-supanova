@@ -5,6 +5,14 @@ import { z } from 'zod';
 import connectDB from '@/lib/db';
 import Company from '@/lib/models/Company';
 import mongoose from 'mongoose';
+import { withTransaction } from '@/lib/utils/transactions';
+import {
+  ValidationError,
+  NotFoundError,
+  ConflictError,
+  handleError,
+  validateObjectId
+} from '@/lib/errors/QueueErrors';
 
 // Zod schema for company update validation
 const companyUpdateSchema = z.object({
@@ -31,63 +39,62 @@ export async function PATCH(
     const { id } = params;
 
     // Validate ObjectId
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return NextResponse.json({ error: 'ID d\'entreprise invalide' }, { status: 400 });
-    }
+    validateObjectId(id, 'ID entreprise');
 
     const body = await request.json();
 
     // Validate the request body
     const validationResult = companyUpdateSchema.safeParse(body);
     if (!validationResult.success) {
-      return NextResponse.json(
-        {
-          error: 'Données invalides',
-          details: validationResult.error.issues.map(issue => ({
-            field: issue.path[0],
-            message: issue.message,
-          })),
-        },
-        { status: 400 }
+      throw new ValidationError(
+        validationResult.error.issues.map(issue => 
+          `${issue.path[0]}: ${issue.message}`
+        ).join(', ')
       );
     }
 
     await connectDB();
 
-    // Check if company exists
-    const existingCompany = await Company.findById(id);
-    if (!existingCompany) {
-      return NextResponse.json({ error: 'Entreprise non trouvée' }, { status: 404 });
-    }
-
-    // If updating name, check for duplicates
-    if (body.name && body.name !== existingCompany.name) {
-      const duplicateCompany = await Company.findOne({ 
-        name: { $regex: new RegExp(`^${body.name}$`, 'i') },
-        _id: { $ne: id }
-      });
-      if (duplicateCompany) {
-        return NextResponse.json({ error: 'Une entreprise avec ce nom existe déjà' }, { status: 409 });
+    // Execute the operation within a transaction
+    const result = await withTransaction(async (session) => {
+      // Check if company exists
+      const existingCompany = await Company.findById(id).session(session);
+      if (!existingCompany) {
+        throw new NotFoundError('Entreprise non trouvée');
       }
-    }
 
-    // Update company
-    const updatedCompany = await Company.findByIdAndUpdate(
-      id,
-      { ...body, updatedAt: new Date() },
-      { new: true, runValidators: true }
-    );
+      // If updating name, check for duplicates
+      if (body.name && body.name !== existingCompany.name) {
+        const duplicateCompany = await Company.findOne({ 
+          name: { $regex: new RegExp(`^${body.name}$`, 'i') },
+          _id: { $ne: id }
+        }).session(session);
+        
+        if (duplicateCompany) {
+          throw new ConflictError('Une entreprise avec ce nom existe déjà');
+        }
+      }
 
-    return NextResponse.json(
-      { 
+      // Update company
+      const updatedCompany = await Company.findByIdAndUpdate(
+        id,
+        { ...body, updatedAt: new Date() },
+        { new: true, runValidators: true, session }
+      );
+
+      return {
         message: 'Entreprise mise à jour avec succès',
         company: updatedCompany 
-      }, 
-      { status: 200 }
-    );
+      };
+    });
+
+    return NextResponse.json(result, { status: 200 });
   } catch (error) {
-    console.error('Error updating company:', error);
-    return NextResponse.json({ error: 'Erreur interne du serveur' }, { status: 500 });
+    const errorResponse = handleError(error);
+    return NextResponse.json(
+      { error: errorResponse.message },
+      { status: errorResponse.statusCode }
+    );
   }
 }
 
@@ -106,34 +113,37 @@ export async function DELETE(
     const { id } = params;
 
     // Validate ObjectId
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return NextResponse.json({ error: 'ID d\'entreprise invalide' }, { status: 400 });
-    }
+    validateObjectId(id, 'ID entreprise');
 
     await connectDB();
 
-    // Check if company exists
-    const existingCompany = await Company.findById(id);
-    if (!existingCompany) {
-      return NextResponse.json({ error: 'Entreprise non trouvée' }, { status: 404 });
-    }
+    // Execute the operation within a transaction
+    const result = await withTransaction(async (session) => {
+      // Check if company exists
+      const existingCompany = await Company.findById(id).session(session);
+      if (!existingCompany) {
+        throw new NotFoundError('Entreprise non trouvée');
+      }
 
-    // Soft delete (set isActive=false)
-    const deletedCompany = await Company.findByIdAndUpdate(
-      id,
-      { isActive: false, updatedAt: new Date() },
-      { new: true }
-    );
+      // Soft delete (set isActive=false)
+      const deletedCompany = await Company.findByIdAndUpdate(
+        id,
+        { isActive: false, updatedAt: new Date() },
+        { new: true, session }
+      );
 
-    return NextResponse.json(
-      { 
+      return {
         message: 'Entreprise supprimée avec succès',
         company: deletedCompany 
-      }, 
-      { status: 200 }
-    );
+      };
+    });
+
+    return NextResponse.json(result, { status: 200 });
   } catch (error) {
-    console.error('Error deleting company:', error);
-    return NextResponse.json({ error: 'Erreur interne du serveur' }, { status: 500 });
+    const errorResponse = handleError(error);
+    return NextResponse.json(
+      { error: errorResponse.message },
+      { status: errorResponse.statusCode }
+    );
   }
 }

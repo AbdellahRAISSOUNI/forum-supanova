@@ -19,6 +19,59 @@ All API endpoints use NextAuth.js for authentication. Session management is hand
 Content-Type: application/json
 ```
 
+## Error Handling
+
+The API uses a comprehensive error handling system with specific error types and proper HTTP status codes.
+
+### Error Response Format
+
+```json
+{
+  "error": "Error message in French",
+  "code": "ERROR_CODE",
+  "details": "Additional error details (optional)"
+}
+```
+
+### Error Types
+
+- **ValidationError** (400): Input validation failures
+- **NotFoundError** (404): Resource not found
+- **ConflictError** (409): Business logic conflicts
+- **ForbiddenError** (403): Authorization failures
+- **QueueConflictError** (409): Queue-specific conflicts
+- **DatabaseError** (500): Database operation failures
+
+### Example Error Responses
+
+```json
+// Validation Error
+{
+  "error": "ID entreprise invalide"
+}
+
+// Conflict Error
+{
+  "error": "Une entreprise avec ce nom existe déjà"
+}
+
+// Queue Conflict Error
+{
+  "error": "Vous avez déjà un entretien en cours. Conflits avec: Company A"
+}
+```
+
+## Database Transactions
+
+Critical operations are wrapped in MongoDB transactions to ensure data consistency and prevent race conditions:
+
+- **Queue Operations**: Join, leave, cancel, reschedule
+- **Interview Management**: Start, end interviews
+- **Company Management**: Create, update, delete companies
+- **Queue Reordering**: Automatic queue position updates
+
+All transaction operations are atomic - either all succeed or all fail with proper rollback.
+
 ## Endpoints
 
 ### 1. User Registration
@@ -379,6 +432,83 @@ Returns active companies with queue information for students.
 ```json
 {
   "message": "Vous avez quitté la file d'attente avec succès"
+}
+```
+
+#### Reschedule Interview
+**POST** `/api/student/queue/reschedule`
+
+Moves an interview to the end of the queue (reschedules it).
+
+**Request Body**:
+```json
+{
+  "interviewId": "string"
+}
+```
+
+**Response** (Success):
+```json
+{
+  "message": "Entretien reporté avec succès. Vous êtes maintenant en fin de file."
+}
+```
+
+**Response** (Error):
+```json
+{
+  "error": "Impossible de reporter un entretien en position 1. Veuillez annuler à la place."
+}
+```
+
+#### Cancel Interview
+**POST** `/api/student/queue/cancel`
+
+Cancels an interview and marks it as cancelled in the history.
+
+**Request Body**:
+```json
+{
+  "interviewId": "string",
+  "reason": "string (optional)"
+}
+```
+
+**Response** (Success):
+```json
+{
+  "message": "Entretien annulé avec succès"
+}
+```
+
+#### Get Interview History
+**GET** `/api/student/history`
+
+Returns the complete interview history for the authenticated student.
+
+**Response** (Success):
+```json
+{
+  "history": [
+    {
+      "_id": "interview_id",
+      "companyName": "Capgemini",
+      "companySector": "IT Services",
+      "companyWebsite": "https://www.capgemini.com",
+      "room": "A1",
+      "opportunityType": "pfe",
+      "status": "completed",
+      "joinedAt": "2025-01-02T10:30:00.000Z",
+      "startedAt": "2025-01-02T11:00:00.000Z",
+      "completedAt": "2025-01-02T11:25:00.000Z",
+      "finalPosition": 1,
+      "priorityScore": 200,
+      "duration": 25
+    }
+  ],
+  "total": 5,
+  "completed": 3,
+  "cancelled": 2
 }
 ```
 

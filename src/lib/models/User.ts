@@ -56,8 +56,7 @@ const userSchema = new mongoose.Schema<IUser>({
   timestamps: true,
 });
 
-// Add index on email for faster lookups
-userSchema.index({ email: 1 });
+// Email index is automatically created by unique: true constraint
 
 // Export the model
 export default mongoose.models.User || mongoose.model<IUser>('User', userSchema);

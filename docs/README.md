@@ -16,6 +16,9 @@ A comprehensive forum platform for connecting students with companies, built wit
 - **Real-time Updates**: React Query with auto-refresh
 - **Notifications**: React Hot Toast for user feedback
 - **State Management**: React Query for server state
+- **Error Handling**: Custom error classes with structured responses
+- **Transactions**: MongoDB transactions for data consistency
+- **Security**: Comprehensive input validation and sanitization
 
 ### Project Structure
 ```
@@ -54,6 +57,10 @@ forum-supanova/
    - Real-time position updates with visual notifications
    - Position banners for upcoming turns
    - Enhanced dashboard with statistics and activity feed
+   - **Multiple Company Queue Management**: Join multiple company queues simultaneously with intelligent conflict prevention
+   - **Interview Reschedule & Cancel**: Reschedule interviews to end of queue or cancel with proper tracking
+   - **Personal Interview History**: Complete history tracking with filtering and statistics
+   - **Enhanced Room Display**: Clear room indicators across all interfaces
 
 2. **Committee** (`committee`)
    - Manages student accounts and company partnerships
@@ -151,6 +158,26 @@ interface IInterview {
 - **Quick Access**: Direct links to companies and queues
 - **Real-time Updates**: All data refreshes automatically
 
+## 🛡️ Error Handling & Data Integrity
+
+### Comprehensive Error Management
+- **Custom Error Classes**: Structured error responses with specific HTTP status codes
+- **Validation System**: Input sanitization and validation with detailed error messages
+- **Error Logging**: Comprehensive error tracking for debugging and monitoring
+- **User-Friendly Messages**: All error messages in French with clear explanations
+
+### Database Transaction Management
+- **Atomic Operations**: All critical operations wrapped in MongoDB transactions
+- **Race Condition Prevention**: Concurrent access protection for queue operations
+- **Data Consistency**: Automatic rollback on transaction failures
+- **Session Management**: Proper database session handling throughout operations
+
+### Queue System Reliability
+- **Consistent Ordering**: Single, predictable priority-based algorithm
+- **Conflict Prevention**: Intelligent queue conflict detection and resolution
+- **Index Optimization**: Optimized database indexes for performance
+- **Concurrent Safety**: Thread-safe operations for high-traffic scenarios
+
 ## 🚀 Getting Started
 
 ### Prerequisites
@@ -223,6 +250,9 @@ NEXTAUTH_SECRET=your-secret-key-here
 - `POST /api/student/queue/join` - Join a company queue
 - `GET /api/student/queues` - Get student's active queues
 - `DELETE /api/student/queue/[interviewId]` - Leave a queue
+- `POST /api/student/queue/reschedule` - Reschedule interview to end of queue
+- `POST /api/student/queue/cancel` - Cancel an interview
+- `GET /api/student/history` - Get complete interview history
 - `GET /api/student/stats` - Get student statistics
 - `GET /api/student/activity` - Get recent activity feed
 
@@ -252,11 +282,12 @@ NEXTAUTH_SECRET=your-secret-key-here
 3. **Login** (`/login`) - Authentication form
 4. **Student Dashboard** (`/dashboard/student`) - Student-specific interface
 5. **Student Companies** (`/dashboard/student/companies`) - Browse companies and join queues
-6. **Student Queues** (`/dashboard/student/queues`) - View and manage queue positions
-7. **Committee Dashboard** (`/dashboard/committee`) - Queue management interface with interview controls
-8. **Admin Dashboard** (`/dashboard/admin`) - Administrative interface
-9. **Admin Companies** (`/dashboard/admin/companies`) - Company management interface
-10. **Admin Committee** (`/dashboard/admin/committee`) - Committee member management interface
+6. **Student Queues** (`/dashboard/student/queues`) - View and manage queue positions with reschedule/cancel options
+7. **Student History** (`/dashboard/student/history`) - Complete interview history with filtering
+8. **Committee Dashboard** (`/dashboard/committee`) - Queue management interface with interview controls
+9. **Admin Dashboard** (`/dashboard/admin`) - Administrative interface
+10. **Admin Companies** (`/dashboard/admin/companies`) - Company management interface
+11. **Admin Committee** (`/dashboard/admin/committee`) - Committee member management interface
 
 ## 🛡️ Security Features
 
@@ -315,11 +346,18 @@ The `middleware.ts` file protects routes based on user authentication and roles:
 - Environment-based configuration
 
 ### Seeding
-- Admin user creation script
+- Admin user creation script: `npm run seed:admin`
 - Pre-configured admin credentials:
   - Email: `admin@ensa.ma`
   - Password: `Admin2025!`
   - Role: `admin`
+
+### Admin Password Reset
+If you forget the admin password, you can reset it using the admin creation script:
+```bash
+npm run seed:admin
+```
+This script will either create a new admin user or reset the password for the existing admin user to `Admin2025!`.
 
 ## 🐛 Troubleshooting
 
