@@ -18,6 +18,11 @@ if (!cached) {
   cached = global.mongoose = { conn: null, promise: null };
 }
 
+// Ensure cached is defined
+if (!cached) {
+  throw new Error('Failed to initialize mongoose cache');
+}
+
 /**
  * Connect to MongoDB with connection pooling
  * Uses lazy initialization to avoid build-time environment variable access

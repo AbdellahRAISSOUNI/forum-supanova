@@ -2,7 +2,79 @@
 
 ## Overview
 
-This guide covers the development workflow, coding standards, and best practices for the Forum des Entreprises project.
+This guide covers the development workflow, coding standards, and best practices for the Forum des Entreprises project. The system now includes advanced security measures, atomic operations, and comprehensive error handling for production-ready development.
+
+## Enhanced Development Practices (Latest Update)
+
+### Security-First Development
+
+The system now implements security-first development practices:
+
+#### Input Sanitization
+```typescript
+// Always sanitize user inputs
+import { sanitizeString, sanitizeObjectId } from '@/lib/errors/QueueErrors';
+
+const sanitizedInput = sanitizeString(userInput, 255);
+const sanitizedId = sanitizeObjectId(userId);
+```
+
+#### Rate Limiting
+```typescript
+// Implement rate limiting for API endpoints
+import { checkRateLimit } from '@/lib/errors/QueueErrors';
+
+if (!checkRateLimit(`api_${userId}`, 10, 60000)) {
+  throw new ValidationError('Trop de tentatives');
+}
+```
+
+#### Atomic Operations
+```typescript
+// Use atomic operations for critical data operations
+import { joinQueueAtomic } from '@/lib/services/atomicQueueService';
+
+const result = await joinQueueAtomic(studentId, companyId, opportunityType);
+```
+
+### Error Handling Best Practices
+
+#### Context-Aware Error Handling
+```typescript
+// Always provide context for error handling
+try {
+  await criticalOperation();
+} catch (error) {
+  return handleError(error, 'operationName');
+}
+```
+
+#### Sanitized Error Messages
+```typescript
+// Error messages are automatically sanitized
+// Never expose sensitive information in error responses
+```
+
+### Database Consistency
+
+#### Use Database Constraints
+```typescript
+// Leverage database constraints for data integrity
+interviewSchema.index({ studentId: 1, companyId: 1, status: 1 }, { 
+  unique: true, 
+  partialFilterExpression: { status: { $in: ['waiting', 'in_progress'] } } 
+});
+```
+
+#### Transaction-Based Operations
+```typescript
+// Use transactions for multi-step operations
+const result = await withTransaction(async (session) => {
+  // All operations within transaction
+  await operation1({ session });
+  await operation2({ session });
+});
+```
 
 ## Development Environment Setup
 

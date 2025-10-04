@@ -11,10 +11,10 @@ const registerSchema = z.object({
   password: z.string().min(6, 'Le mot de passe doit contenir au moins 6 caractères'),
   confirmPassword: z.string(),
   studentStatus: z.enum(['ensa', 'external'], {
-    required_error: 'Veuillez sélectionner le statut étudiant',
+    message: 'Veuillez sélectionner le statut étudiant',
   }),
   opportunityType: z.enum(['pfa', 'pfe', 'employment', 'observation'], {
-    required_error: 'Veuillez sélectionner le type d\'opportunité',
+    message: 'Veuillez sélectionner le type d\'opportunité',
   }),
 }).refine((data) => data.password === data.confirmPassword, {
   message: 'Les mots de passe ne correspondent pas',

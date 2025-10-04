@@ -17,6 +17,16 @@ import {
   validateEnum
 } from '../errors/QueueErrors';
 
+// Import atomic operations
+import {
+  joinQueueAtomic,
+  leaveQueueAtomic,
+  startInterviewAtomic,
+  endInterviewAtomic,
+  passInterviewAtomic,
+  moveToNextStudentAtomic
+} from './atomicQueueService';
+
 export interface QueuePosition {
   _id: string;
   studentName: string;
@@ -137,106 +147,14 @@ export async function checkQueueConflicts(
 }
 
 /**
- * Join a queue for a specific company
+ * Join a queue for a specific company (uses atomic operations)
  */
 export async function joinQueue(
   studentId: string,
   companyId: string,
   opportunityType: string
 ): Promise<JoinQueueResult> {
-  try {
-    await connectDB();
-
-    // Validate inputs
-    validateObjectId(studentId, 'ID étudiant');
-    validateObjectId(companyId, 'ID entreprise');
-    validateRequired(opportunityType, 'Type d\'opportunité');
-    validateEnum(opportunityType, ['pfa', 'pfe', 'employment', 'observation'], 'Type d\'opportunité');
-
-    // Pre-validation checks (outside transaction for performance)
-    const existingInterview = await Interview.findOne({
-      studentId,
-      companyId,
-      status: { $in: ['waiting', 'in_progress'] }
-    });
-
-    if (existingInterview) {
-      throw new ConflictError('Vous êtes déjà dans la file d\'attente pour cette entreprise');
-    }
-
-    // Check for conflicts with other queues
-    const conflictCheck = await checkQueueConflicts(studentId, companyId);
-    if (!conflictCheck.canJoin) {
-      throw new QueueConflictError(
-        `${conflictCheck.message}. Conflits avec: ${conflictCheck.conflicts.join(', ')}`,
-        conflictCheck.conflicts
-      );
-    }
-
-    // Execute the main operation within a transaction
-    const result = await withTransaction(async (session) => {
-      // Get student from database
-      const student = await User.findById(studentId).session(session);
-      if (!student) {
-        throw new NotFoundError('Étudiant non trouvé');
-      }
-
-      // Check if company exists and is active
-      const company = await Company.findById(companyId).session(session);
-      if (!company) {
-        throw new NotFoundError('Entreprise non trouvée');
-      }
-
-      if (!company.isActive) {
-        throw new ConflictError('Cette entreprise n\'est plus active');
-      }
-
-      // Calculate priority score
-      const priorityScore = calculatePriorityScore(student, opportunityType);
-
-      // Count current queue size for company
-      const queueCount = await Interview.countDocuments({
-        companyId,
-        status: 'waiting'
-      }).session(session);
-
-      // Create new interview record
-      const newInterview = new Interview({
-        studentId,
-        companyId,
-        status: 'waiting',
-        queuePosition: queueCount + 1, // Will be corrected by reorderQueue
-        priorityScore,
-        opportunityType,
-        joinedAt: new Date()
-      });
-
-      await newInterview.save({ session });
-
-      // Reorder the queue after adding the new student
-      const reorderResult = await reorderQueueWithSession(companyId, session);
-      
-      if (!reorderResult.success) {
-        throw new DatabaseError(`Failed to reorder queue: ${reorderResult.message}`);
-      }
-
-      // Get the updated position after reordering
-      const updatedInterview = await Interview.findById(newInterview._id).session(session);
-      const finalPosition = updatedInterview?.queuePosition || queueCount + 1;
-
-      return {
-        success: true,
-        message: 'Vous avez rejoint la file d\'attente avec succès',
-        position: finalPosition,
-        interviewId: newInterview._id.toString()
-      };
-    });
-
-    return result;
-
-  } catch (error) {
-    return handleError(error);
-  }
+  return await joinQueueAtomic(studentId, companyId, opportunityType);
 }
 
 /**
@@ -274,53 +192,10 @@ export async function getQueueForCompany(companyId: string): Promise<QueuePositi
 }
 
 /**
- * Leave a queue (cancel interview)
+ * Leave a queue (cancel interview) (uses atomic operations)
  */
 export async function leaveQueue(interviewId: string, studentId: string): Promise<JoinQueueResult> {
-  try {
-    await connectDB();
-
-    // Validate inputs
-    validateObjectId(interviewId, 'ID entretien');
-    validateObjectId(studentId, 'ID étudiant');
-
-    // Execute the operation within a transaction
-    const result = await withTransaction(async (session) => {
-      // Find the interview
-      const interview = await Interview.findOne({
-        _id: interviewId,
-        studentId,
-        status: 'waiting'
-      }).session(session);
-
-      if (!interview) {
-        throw new NotFoundError('Interview non trouvée ou déjà traitée');
-      }
-
-      // Update interview status to cancelled
-      await Interview.findByIdAndUpdate(interviewId, {
-        status: 'cancelled',
-        updatedAt: new Date()
-      }, { session });
-
-      // Reorder the queue after leaving
-      const reorderResult = await reorderQueueWithSession(interview.companyId.toString(), session);
-      
-      if (!reorderResult.success) {
-        throw new DatabaseError(`Failed to reorder queue after leaving: ${reorderResult.message}`);
-      }
-
-      return {
-        success: true,
-        message: 'Vous avez quitté la file d\'attente avec succès'
-      };
-    });
-
-    return result;
-
-  } catch (error) {
-    return handleError(error);
-  }
+  return await leaveQueueAtomic(interviewId, studentId);
 }
 
 /**
@@ -573,281 +448,31 @@ export async function getQueueStats(companyId: string): Promise<{
 }
 
 /**
- * Start an interview
+ * Start an interview (uses atomic operations)
  */
 export async function startInterview(interviewId: string, committeeUserId: string): Promise<JoinQueueResult> {
-  try {
-    await connectDB();
-
-    // Validate inputs
-    validateObjectId(interviewId, 'ID entretien');
-    validateObjectId(committeeUserId, 'ID membre comité');
-
-    // Execute the operation within a transaction
-    const result = await withTransaction(async (session) => {
-      // Get committee member
-      const committeeMember = await User.findById(committeeUserId).session(session);
-      if (!committeeMember || committeeMember.role !== 'committee') {
-        throw new NotFoundError('Membre du comité non trouvé');
-      }
-
-      // Get interview
-      const interview = await Interview.findById(interviewId)
-        .populate('companyId', 'room name')
-        .populate('studentId', 'firstName name studentStatus role')
-        .session(session);
-      
-      if (!interview) {
-        throw new NotFoundError('Entretien non trouvé');
-      }
-
-      // Verify committee member has access to this room
-      if (committeeMember.assignedRoom !== interview.companyId.room) {
-        throw new ForbiddenError('Vous n\'avez pas accès à cette salle');
-      }
-
-      // Check interview status
-      if (interview.status !== 'waiting') {
-        throw new ConflictError('Cet entretien n\'est pas en attente');
-      }
-
-      // Check if there's already an interview in progress for this company
-      const inProgressInterview = await Interview.findOne({
-        companyId: interview.companyId._id,
-        status: 'in_progress'
-      }).session(session);
-
-      if (inProgressInterview) {
-        throw new ConflictError('Un entretien est déjà en cours pour cette entreprise');
-      }
-
-      // Update interview status
-      await Interview.findByIdAndUpdate(interviewId, {
-        status: 'in_progress',
-        startedAt: new Date(),
-        updatedAt: new Date()
-      }, { session });
-
-      return {
-        success: true,
-        message: 'Entretien démarré avec succès'
-      };
-    });
-
-    return result;
-  } catch (error) {
-    return handleError(error);
-  }
+  return await startInterviewAtomic(interviewId, committeeUserId);
 }
 
 /**
- * Pass/Skip an interview (move to next student without completing)
+ * Pass/Skip an interview (uses atomic operations)
  */
 export async function passInterview(interviewId: string, committeeUserId: string): Promise<JoinQueueResult> {
-  try {
-    await connectDB();
-
-    // Validate inputs
-    validateObjectId(interviewId, 'ID entretien');
-    validateObjectId(committeeUserId, 'ID membre comité');
-
-    // Execute the operation within a transaction
-    const result = await withTransaction(async (session) => {
-      // Get committee member
-      const committeeMember = await User.findById(committeeUserId).session(session);
-      if (!committeeMember || committeeMember.role !== 'committee') {
-        throw new NotFoundError('Membre du comité non trouvé');
-      }
-
-      // Get interview
-      const interview = await Interview.findById(interviewId)
-        .populate('companyId', 'room name')
-        .populate('studentId', 'firstName name studentStatus role')
-        .session(session);
-      
-      if (!interview) {
-        throw new NotFoundError('Entretien non trouvé');
-      }
-
-      // Verify committee member has access to this room
-      if (committeeMember.assignedRoom !== interview.companyId.room) {
-        throw new ForbiddenError('Vous n\'avez pas accès à cette salle');
-      }
-
-      // Check interview status
-      if (interview.status !== 'in_progress') {
-        throw new ConflictError('Cet entretien n\'est pas en cours');
-      }
-
-      // Update interview status to passed
-      await Interview.findByIdAndUpdate(interviewId, {
-        status: 'passed',
-        passedAt: new Date(),
-        updatedAt: new Date()
-      }, { session });
-
-      // Reorder the queue after passing the interview
-      const reorderResult = await reorderQueueWithSession(interview.companyId._id.toString(), session);
-      
-      if (!reorderResult.success) {
-        throw new DatabaseError(`Failed to reorder queue after passing interview: ${reorderResult.message}`);
-      }
-
-      return {
-        success: true,
-        message: 'Entretien passé avec succès - Étudiant suivant dans la file'
-      };
-    });
-
-    return result;
-  } catch (error) {
-    return handleError(error);
-  }
+  return await passInterviewAtomic(interviewId, committeeUserId);
 }
 
 /**
- * Move to next student (skip current and start next interview)
+ * Move to next student (uses atomic operations)
  */
 export async function moveToNextStudent(companyId: string, committeeUserId: string): Promise<JoinQueueResult> {
-  try {
-    await connectDB();
-
-    // Validate inputs
-    validateObjectId(companyId, 'ID entreprise');
-    validateObjectId(committeeUserId, 'ID membre comité');
-
-    // Execute the operation within a transaction
-    const result = await withTransaction(async (session) => {
-      // Get committee member
-      const committeeMember = await User.findById(committeeUserId).session(session);
-      if (!committeeMember || committeeMember.role !== 'committee') {
-        throw new NotFoundError('Membre du comité non trouvé');
-      }
-
-      // Get company
-      const company = await Company.findById(companyId).session(session);
-      if (!company) {
-        throw new NotFoundError('Entreprise non trouvée');
-      }
-
-      // Verify committee member has access to this room
-      if (committeeMember.assignedRoom !== company.room) {
-        throw new ForbiddenError('Vous n\'avez pas accès à cette salle');
-      }
-
-      // Check if there's an interview in progress
-      const currentInterview = await Interview.findOne({
-        companyId,
-        status: 'in_progress'
-      }).session(session);
-
-      if (currentInterview) {
-        // Pass the current interview first
-        await Interview.findByIdAndUpdate(currentInterview._id, {
-          status: 'passed',
-          passedAt: new Date(),
-          updatedAt: new Date()
-        }, { session });
-      }
-
-      // Get the next student in queue
-      const nextInterview = await Interview.findOne({
-        companyId,
-        status: 'waiting'
-      })
-      .populate('studentId', 'firstName name studentStatus role')
-      .sort({ priorityScore: 1, joinedAt: 1 })
-      .session(session);
-
-      if (!nextInterview) {
-        return {
-          success: true,
-          message: 'Aucun étudiant en attente dans cette file'
-        };
-      }
-
-      // Start the next interview
-      await Interview.findByIdAndUpdate(nextInterview._id, {
-        status: 'in_progress',
-        startedAt: new Date(),
-        updatedAt: new Date()
-      }, { session });
-
-      return {
-        success: true,
-        message: `Entretien démarré avec ${nextInterview.studentId.firstName} ${nextInterview.studentId.name}`
-      };
-    });
-
-    return result;
-  } catch (error) {
-    return handleError(error);
-  }
+  return await moveToNextStudentAtomic(companyId, committeeUserId);
 }
 
 /**
- * End an interview
+ * End an interview (uses atomic operations)
  */
 export async function endInterview(interviewId: string, committeeUserId: string): Promise<JoinQueueResult> {
-  try {
-    await connectDB();
-
-    // Validate inputs
-    validateObjectId(interviewId, 'ID entretien');
-    validateObjectId(committeeUserId, 'ID membre comité');
-
-    // Execute the operation within a transaction
-    const result = await withTransaction(async (session) => {
-      // Get committee member
-      const committeeMember = await User.findById(committeeUserId).session(session);
-      if (!committeeMember || committeeMember.role !== 'committee') {
-        throw new NotFoundError('Membre du comité non trouvé');
-      }
-
-      // Get interview
-      const interview = await Interview.findById(interviewId)
-        .populate('companyId', 'room name')
-        .populate('studentId', 'firstName name studentStatus role')
-        .session(session);
-      
-      if (!interview) {
-        throw new NotFoundError('Entretien non trouvé');
-      }
-
-      // Verify committee member has access to this room
-      if (committeeMember.assignedRoom !== interview.companyId.room) {
-        throw new ForbiddenError('Vous n\'avez pas accès à cette salle');
-      }
-
-      // Check interview status
-      if (interview.status !== 'in_progress') {
-        throw new ConflictError('Cet entretien n\'est pas en cours');
-      }
-
-      // Update interview status
-      await Interview.findByIdAndUpdate(interviewId, {
-        status: 'completed',
-        completedAt: new Date(),
-        updatedAt: new Date()
-      }, { session });
-
-      // Reorder the queue after ending the interview
-      const reorderResult = await reorderQueueWithSession(interview.companyId._id.toString(), session);
-      
-      if (!reorderResult.success) {
-        throw new DatabaseError(`Failed to reorder queue after ending interview: ${reorderResult.message}`);
-      }
-
-      return {
-        success: true,
-        message: 'Entretien terminé avec succès'
-      };
-    });
-
-    return result;
-  } catch (error) {
-    return handleError(error);
-  }
+  return await endInterviewAtomic(interviewId, committeeUserId);
 }
 
 /**

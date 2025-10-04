@@ -34,6 +34,9 @@ The Forum des Entreprises is a web application built with Next.js 14 that facili
 - **Database ORM**: Mongoose
 - **Validation**: Zod
 - **Password Hashing**: bcryptjs
+- **Atomic Operations**: MongoDB transactions with race-condition prevention
+- **Error Handling**: Custom error classes with sanitization
+- **Security**: Input validation, rate limiting, and secure headers
 
 ### Database
 - **Primary Database**: MongoDB
@@ -46,6 +49,54 @@ The Forum des Entreprises is a web application built with Next.js 14 that facili
 - **Environment**: Node.js 18+
 - **Process Management**: PM2 (for traditional servers)
 - **Reverse Proxy**: Nginx (for traditional servers)
+
+## Critical System Components
+
+### Atomic Queue Operations
+The system now implements race-condition-free queue management using MongoDB's atomic operations:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Atomic Queue Service                     │
+├─────────────────────────────────────────────────────────────┤
+│ • joinQueueAtomic()    - Race-condition-free queue joining  │
+│ • leaveQueueAtomic()   - Atomic queue position updates      │
+│ • startInterviewAtomic() - Atomic interview state changes   │
+│ • endInterviewAtomic() - Atomic interview completion        │
+│ • passInterviewAtomic() - Atomic interview skipping         │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Database Consistency System
+Automated integrity validation and repair system:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                Database Consistency Checker                 │
+├─────────────────────────────────────────────────────────────┤
+│ • Duplicate Position Detection & Repair                     │
+│ • Orphaned Interview Cleanup                                │
+│ • Queue Position Validation                                 │
+│ • Status Consistency Checks                                 │
+│ • Admin Monitoring API                                      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Security Architecture
+Multi-layered security implementation:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      Security Layers                        │
+├─────────────────────────────────────────────────────────────┤
+│ Layer 1: Input Sanitization (XSS/Injection Prevention)      │
+│ Layer 2: Rate Limiting (10 req/min per user)               │
+│ Layer 3: Input Validation (Zod schemas)                    │
+│ Layer 4: Authentication (NextAuth.js)                      │
+│ Layer 5: Authorization (Role-based access control)         │
+│ Layer 6: Error Sanitization (Information leakage prevention)│
+└─────────────────────────────────────────────────────────────┘
+```
 
 ## Application Architecture
 
