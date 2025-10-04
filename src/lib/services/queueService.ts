@@ -112,20 +112,9 @@ export async function checkQueueConflicts(
       );
     }
 
-    // Check for upcoming interviews (next 3 positions) that might conflict
-    const upcomingInterviews = await Interview.find({
-      studentId,
-      status: 'waiting',
-      queuePosition: { $lte: 3 }
-    }).populate('companyId', 'name room');
-
-    if (upcomingInterviews.length > 0) {
-      const conflicts = upcomingInterviews.map((i: any) => i.companyId.name);
-      throw new QueueConflictError(
-        'Vous avez des entretiens prioritaires en attente (position ≤ 3)',
-        conflicts
-      );
-    }
+    // Note: Removed the restriction on joining multiple queues
+    // Students should be able to apply to multiple companies simultaneously
+    // The only restriction is having an active interview in progress
 
     return { canJoin: true, conflicts: [], message: 'OK' };
   } catch (error) {

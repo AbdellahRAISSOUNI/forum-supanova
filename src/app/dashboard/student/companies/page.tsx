@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import RoomIndicator from '@/components/RoomIndicator';
+import { ArrowLeftIcon, BuildingOfficeIcon, ClockIcon, GlobeAltIcon, QueueListIcon } from '@heroicons/react/24/outline';
 
 interface Company {
   _id: string;
@@ -114,10 +115,10 @@ export default function StudentCompaniesPage() {
 
   if (status === 'loading') {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[#2880CA] mx-auto"></div>
-          <p className="mt-4 text-gray-600">Chargement...</p>
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-200 border-t-[#2880CA] mx-auto"></div>
+          <p className="mt-4 text-slate-600 font-medium">Chargement...</p>
         </div>
       </div>
     );
@@ -128,31 +129,41 @@ export default function StudentCompaniesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-[#2880CA] text-white py-6 px-4 sm:px-8">
-        <div className="max-w-6xl mx-auto flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold">Entreprises Participantes</h1>
-            <p className="text-lg opacity-90">Bienvenue, {session.user.firstName} {session.user.name}!</p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      {/* Modern Header */}
+      <header className="bg-[#2880CA] backdrop-blur-md border-b border-blue-600 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-4">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => router.push('/dashboard/student')}
+                className="p-2 rounded-xl bg-white/20 hover:bg-white/30 transition-colors"
+              >
+                <ArrowLeftIcon className="w-5 h-5 text-white" />
+              </button>
+              <div>
+                <h1 className="text-2xl font-bold text-white">Entreprises Participantes</h1>
+                <p className="text-blue-100">Découvrez les entreprises du forum</p>
+              </div>
+            </div>
+            <button
+              onClick={() => signOut({ callbackUrl: '/' })}
+              className="px-3 py-2 sm:px-4 sm:py-2 bg-red-500 hover:bg-red-600 text-white rounded-xl font-medium transition-colors text-sm sm:text-base"
+            >
+              Se déconnecter
+            </button>
           </div>
-          <button
-            onClick={() => signOut({ callbackUrl: '/' })}
-            className="bg-white text-[#2880CA] font-semibold py-2 px-4 rounded-lg hover:bg-gray-100 transition-colors"
-          >
-            Déconnexion
-          </button>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="max-w-6xl mx-auto py-8 px-4 sm:px-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Message Display */}
         {message && (
-          <div className={`mb-6 p-4 rounded-md ${
+          <div className={`mb-6 p-4 rounded-xl border ${
             message.type === 'error'
-              ? 'bg-red-50 border border-red-200 text-red-700'
-              : 'bg-green-50 border border-green-200 text-green-700'
+              ? 'bg-red-50 border-red-200 text-red-700'
+              : 'bg-emerald-50 border-emerald-200 text-emerald-700'
           }`}>
             {message.text}
           </div>
@@ -160,8 +171,8 @@ export default function StudentCompaniesPage() {
 
         {/* Header */}
         <div className="mb-8">
-          <h2 className="text-2xl font-semibold text-gray-800 mb-2">Découvrez les Entreprises</h2>
-          <p className="text-gray-600">
+          <h2 className="text-3xl font-bold text-slate-900 mb-2">Découvrez les Entreprises</h2>
+          <p className="text-slate-600 text-lg">
             Explorez les entreprises participantes au forum et préparez-vous pour vos entretiens.
           </p>
         </div>
@@ -169,89 +180,80 @@ export default function StudentCompaniesPage() {
         {/* Companies Grid */}
         {isLoading ? (
           <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2880CA] mx-auto"></div>
-            <p className="mt-4 text-gray-600">Chargement des entreprises...</p>
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-[#2880CA] mx-auto"></div>
+            <p className="mt-4 text-slate-600 font-medium">Chargement des entreprises...</p>
           </div>
         ) : companies.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-lg shadow-md">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-              </svg>
+          <div className="text-center py-16 bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20">
+            <div className="w-20 h-20 bg-gradient-to-br from-slate-50 to-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+              <BuildingOfficeIcon className="w-10 h-10 text-slate-400" />
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Aucune entreprise disponible</h3>
-            <p className="text-gray-600">Les entreprises seront bientôt ajoutées par l'administration.</p>
+            <h3 className="text-xl font-semibold text-slate-900 mb-2">Aucune entreprise disponible</h3>
+            <p className="text-slate-600">Les entreprises seront bientôt ajoutées par l'administration.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="space-y-3 md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-6 md:space-y-0">
             {companies.map((company) => (
               <div
                 key={company._id}
-                className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 p-6 border border-gray-200"
+                className="bg-white/70 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 p-4 md:p-6 hover:shadow-xl transition-all duration-300"
               >
-                {/* Company Header */}
-                <div className="mb-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-xl font-semibold text-gray-900">{company.name}</h3>
-                    <RoomIndicator room={company.room} size="sm" />
+                {/* Mobile-First Compact Layout */}
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-lg md:text-xl font-bold text-slate-900 truncate">{company.name}</h3>
+                    <div className="flex items-center mt-1">
+                      <BuildingOfficeIcon className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2 text-slate-500 flex-shrink-0" />
+                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                        {company.sector}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex items-center text-sm text-gray-600 mb-2">
-                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                    </svg>
-                    <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
-                      {company.sector}
-                    </span>
+                  <RoomIndicator room={company.room} size="sm" />
+                </div>
+
+                {/* Compact Info Grid */}
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  <div className="flex items-center text-xs md:text-sm text-slate-600 bg-slate-50 px-2 py-1.5 rounded-lg">
+                    <ClockIcon className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2 text-slate-500 flex-shrink-0" />
+                    <span className="truncate">{company.estimatedInterviewDuration}min</span>
+                  </div>
+                  <div className="flex items-center text-xs md:text-sm text-slate-600 bg-slate-50 px-2 py-1.5 rounded-lg">
+                    <QueueListIcon className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2 text-slate-500 flex-shrink-0" />
+                    <span className="truncate">{company.queueLength || 0} en attente</span>
                   </div>
                 </div>
 
-                {/* Company Details */}
-                <div className="space-y-3 mb-6">
-                  
-                  <div className="flex items-center text-sm text-gray-600">
-                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span>Durée: <strong>{company.estimatedInterviewDuration} minutes</strong></span>
-                  </div>
-
-                  <div className="flex items-center text-sm text-gray-600">
-                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                    </svg>
-                    <span>File d'attente: <strong>{company.queueLength || 0} personne(s)</strong></span>
-                  </div>
-
-                  <div className="flex items-center text-sm text-gray-600">
-                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0-9v9" />
-                    </svg>
+                {/* Website Link - Mobile Optimized */}
+                {company.website && (
+                  <div className="mb-4">
                     <a
                       href={company.website}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-[#2880CA] hover:text-[#1e5f8a] transition-colors"
+                      className="flex items-center text-xs md:text-sm text-[#2880CA] hover:text-blue-600 transition-colors bg-blue-50 px-2 py-1.5 rounded-lg"
                     >
-                      Visiter le site web
+                      <GlobeAltIcon className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2 flex-shrink-0" />
+                      <span className="truncate">Site web</span>
                     </a>
                   </div>
-                </div>
+                )}
 
-                {/* Action Button */}
-                <div className="pt-4 border-t border-gray-200">
+                {/* Action Button - Mobile Optimized */}
+                <div className="pt-3 border-t border-slate-200">
                   {company.studentInQueue ? (
                     <div className="text-center">
-                      <div className="bg-green-100 text-green-800 px-3 py-2 rounded-lg font-semibold mb-2">
+                      <div className="bg-emerald-100 text-emerald-800 px-3 py-2 md:px-4 md:py-3 rounded-lg md:rounded-xl font-semibold text-sm md:text-base border border-emerald-200">
                         Dans la file - Position {company.studentInQueue.position}
                       </div>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-slate-500 mt-1">
                         Vous êtes déjà dans cette file d'attente
                       </p>
                     </div>
                   ) : (
                     <button
                       onClick={() => openJoinModal(company)}
-                      className="w-full bg-[#2880CA] hover:bg-[#1e5f8a] text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+                      className="w-full bg-gradient-to-r from-[#2880CA] to-blue-600 hover:from-blue-600 hover:to-[#2880CA] text-white font-semibold py-2.5 md:py-3 px-3 md:px-4 rounded-lg md:rounded-xl transition-all duration-300 text-sm md:text-base shadow-lg hover:shadow-xl"
                     >
                       Rejoindre la File
                     </button>
@@ -262,26 +264,26 @@ export default function StudentCompaniesPage() {
           </div>
         )}
 
-        {/* Stats Section */}
+        {/* Stats Section - Mobile Optimized */}
         {companies.length > 0 && (
-          <div className="mt-12 bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Statistiques</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="mt-8 md:mt-12 bg-white/70 backdrop-blur-sm rounded-xl md:rounded-2xl shadow-xl border border-white/20 p-4 md:p-8">
+            <h3 className="text-lg md:text-2xl font-bold text-slate-900 mb-4 md:mb-6">Statistiques</h3>
+            <div className="grid grid-cols-3 gap-4 md:gap-8">
               <div className="text-center">
-                <div className="text-3xl font-bold text-[#2880CA] mb-2">{companies.length}</div>
-                <div className="text-sm text-gray-600">Entreprises participantes</div>
+                <div className="text-2xl md:text-4xl font-bold text-[#2880CA] mb-1 md:mb-2">{companies.length}</div>
+                <div className="text-xs md:text-base text-slate-600 font-medium">Entreprises</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-[#2880CA] mb-2">
+                <div className="text-2xl md:text-4xl font-bold text-[#2880CA] mb-1 md:mb-2">
                   {Math.round(companies.reduce((acc, company) => acc + company.estimatedInterviewDuration, 0) / companies.length)}
                 </div>
-                <div className="text-sm text-gray-600">Durée moyenne d'entretien</div>
+                <div className="text-xs md:text-base text-slate-600 font-medium">Durée moy.</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-[#2880CA] mb-2">
+                <div className="text-2xl md:text-4xl font-bold text-[#2880CA] mb-1 md:mb-2">
                   {new Set(companies.map(c => c.sector)).size}
                 </div>
-                <div className="text-sm text-gray-600">Secteurs représentés</div>
+                <div className="text-xs md:text-base text-slate-600 font-medium">Secteurs</div>
               </div>
             </div>
           </div>
@@ -290,60 +292,60 @@ export default function StudentCompaniesPage() {
 
       {/* Join Queue Modal */}
       {isModalOpen && selectedCompany && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl max-w-md w-full border border-white/20">
+            <div className="p-8">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-bold text-slate-900">
                   Rejoindre la file d'attente
                 </h3>
                 <button
                   onClick={closeModal}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                  className="p-2 rounded-xl hover:bg-slate-100 transition-colors"
                 >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               </div>
 
-              <div className="mb-4">
-                <p className="text-gray-600 mb-2">
-                  Entreprise: <strong>{selectedCompany.name}</strong>
+              <div className="mb-6">
+                <p className="text-slate-600 mb-2">
+                  Entreprise: <strong className="text-slate-900">{selectedCompany.name}</strong>
                 </p>
-                <p className="text-gray-600 mb-4">
-                  Salle: <strong>{selectedCompany.room}</strong>
+                <p className="text-slate-600 mb-4">
+                  Salle: <strong className="text-slate-900">{selectedCompany.room}</strong>
                 </p>
               </div>
 
-              <div className="mb-6">
-                <label htmlFor="opportunityType" className="block text-sm font-medium text-gray-700 mb-2">
+              <div className="mb-8">
+                <label htmlFor="opportunityType" className="block text-sm font-semibold text-slate-700 mb-3">
                   Type d'opportunité
                 </label>
                 <select
                   id="opportunityType"
                   value={selectedOpportunityType}
                   onChange={(e) => setSelectedOpportunityType(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#2880CA]"
+                  className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2880CA] focus:border-transparent transition-all text-slate-900 bg-white"
                 >
-                  <option value="pfa">PFA (Projet de Fin d'Année)</option>
-                  <option value="pfe">PFE (Projet de Fin d'Études)</option>
-                  <option value="employment">Emploi</option>
-                  <option value="observation">Stage d'observation</option>
+                  <option value="pfa" className="text-slate-900">PFA (Projet de Fin d'Année)</option>
+                  <option value="pfe" className="text-slate-900">PFE (Projet de Fin d'Études)</option>
+                  <option value="employment" className="text-slate-900">Emploi</option>
+                  <option value="observation" className="text-slate-900">Stage d'observation</option>
                 </select>
               </div>
 
-              <div className="flex justify-end space-x-3">
+              <div className="flex justify-end space-x-4">
                 <button
                   onClick={closeModal}
-                  className="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
+                  className="px-6 py-3 text-slate-700 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors font-medium"
                 >
                   Annuler
                 </button>
                 <button
                   onClick={handleJoinQueue}
                   disabled={isJoining}
-                  className="px-4 py-2 bg-[#2880CA] text-white rounded-md hover:bg-[#1e5f8a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-6 py-3 bg-gradient-to-r from-[#2880CA] to-blue-600 hover:from-blue-600 hover:to-[#2880CA] text-white rounded-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none font-medium shadow-lg"
                 >
                   {isJoining ? 'Connexion...' : 'Rejoindre'}
                 </button>
@@ -352,15 +354,6 @@ export default function StudentCompaniesPage() {
           </div>
         </div>
       )}
-
-      {/* Footer */}
-      <footer className="bg-gray-800 text-white py-6 px-4 sm:px-8 mt-12">
-        <div className="max-w-6xl mx-auto text-center">
-          <p className="text-gray-300">
-            © 2025 ENSA Tétouan - Forum des Entreprises. Tous droits réservés.
-          </p>
-        </div>
-      </footer>
     </div>
   );
 }

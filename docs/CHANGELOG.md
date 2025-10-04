@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed - Recent Critical Issues (January 2025)
+- **Queue Joining Functionality**
+  - Fixed MongoDB `updatedAt` field conflict in atomic queue operations
+  - Resolved "Données invalides pour l'entretien" validation error
+  - Fixed missing `queuePosition` field in interview creation
+  - Improved error handling with detailed validation messages
+- **Student Dashboard Data Consistency**
+  - Fixed discrepancy between dashboard queue count and queues page
+  - Updated student stats API to show only active queues (waiting + in_progress)
+  - Added `totalCompleted` field for better statistics display
+  - Enhanced queue count accuracy across all student interfaces
+- **React Performance Issues**
+  - Fixed "Maximum update depth exceeded" infinite loop in StudentQueuesPage
+  - Resolved circular dependency in useEffect hooks
+  - Optimized position tracking and banner update logic
+  - Separated concerns into multiple focused useEffect hooks
+- **UI/UX Improvements**
+  - Enhanced empty state design for student queues page
+  - Added queue summary header with live update indicators
+  - Improved queue cards with hover effects and better shadows
+  - Better navigation with multiple action buttons in empty states
+
 ### Added - Critical System Fixes (Latest Update)
 - **Atomic Queue Operations**
   - New `atomicQueueService.ts` with race-condition-free operations

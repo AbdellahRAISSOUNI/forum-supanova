@@ -6,6 +6,68 @@ This guide covers the development workflow, coding standards, and best practices
 
 ## Enhanced Development Practices (Latest Update)
 
+### Recent Critical Fixes (January 2025)
+
+#### MongoDB Timestamp Management
+```typescript
+// ❌ WRONG: Manual updatedAt setting causes conflicts
+await Interview.findByIdAndUpdate(id, {
+  status: 'waiting',
+  updatedAt: new Date() // Conflicts with Mongoose timestamps
+});
+
+// ✅ CORRECT: Let Mongoose handle timestamps automatically
+await Interview.findByIdAndUpdate(id, {
+  status: 'waiting'
+  // updatedAt is automatically managed by timestamps: true
+});
+```
+
+#### Required Field Validation
+```typescript
+// ❌ WRONG: Missing required fields
+const newInterview = new Interview({
+  studentId,
+  companyId,
+  status: 'waiting'
+  // Missing queuePosition - required field!
+});
+
+// ✅ CORRECT: Set all required fields
+const currentQueueLength = await Interview.countDocuments({
+  companyId,
+  status: 'waiting'
+});
+
+const newInterview = new Interview({
+  studentId,
+  companyId,
+  status: 'waiting',
+  queuePosition: currentQueueLength + 1, // Required field set
+  priorityScore,
+  opportunityType
+});
+```
+
+#### React useEffect Best Practices
+```typescript
+// ❌ WRONG: Circular dependency causes infinite loop
+useEffect(() => {
+  setPreviousPositions(newPositions);
+}, [queues, previousPositions]); // previousPositions causes loop
+
+// ✅ CORRECT: Separate concerns, avoid circular dependencies
+useEffect(() => {
+  // Position tracking logic
+  setPreviousPositions(newPositions);
+}, [queues]); // Only depend on queues
+
+useEffect(() => {
+  // Banner update logic
+  setShowPositionBanner(newBanner);
+}, [queues]); // Separate effect for different concern
+```
+
 ### Security-First Development
 
 The system now implements security-first development practices:

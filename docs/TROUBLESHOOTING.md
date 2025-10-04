@@ -6,7 +6,76 @@ This guide covers common issues encountered during development and deployment of
 
 ## Development Issues
 
-### 1. Admin Password Issues
+### 1. Queue Joining Issues
+
+#### Problem: "Updating the path 'updatedAt' would create a conflict at 'updatedAt'"
+
+**Symptoms:**
+- Students cannot join queues
+- MongoDB conflict error in console
+- API returns 400 error when joining queue
+
+**Root Cause:**
+- Mongoose schema has `timestamps: true` which automatically manages `updatedAt`
+- Code was manually setting `updatedAt` field, causing conflicts
+
+**Solution:**
+- Remove manual `updatedAt` setting from all atomic operations
+- Let Mongoose handle timestamps automatically
+- Fixed in `atomicQueueService.ts` and `queueService.ts`
+
+#### Problem: "Données invalides pour l'entretien" (Invalid interview data)
+
+**Symptoms:**
+- Queue joining fails with validation error
+- Students cannot create interview records
+- API returns validation error
+
+**Root Cause:**
+- Missing required `queuePosition` field when creating new interviews
+- Interview schema requires `queuePosition` but it wasn't being set
+
+**Solution:**
+- Calculate current queue length before creating new interview
+- Set temporary `queuePosition` during creation
+- Let `atomicUpdateQueuePosition` properly reorder positions
+
+#### Problem: Dashboard shows different queue count than queues page
+
+**Symptoms:**
+- Dashboard shows "Files d'Attente: 2" but queues page shows "Aucune file d'attente"
+- Inconsistent data between different pages
+- Confusing user experience
+
+**Root Cause:**
+- Student stats API counted ALL interviews (including completed/cancelled)
+- Student queues API only returned ACTIVE queues (waiting + in_progress)
+
+**Solution:**
+- Updated stats API to count only active queues
+- Added `totalCompleted` field for better statistics
+- Made data consistent across all interfaces
+
+### 2. React Performance Issues
+
+#### Problem: "Maximum update depth exceeded" infinite loop
+
+**Symptoms:**
+- Console error: "Maximum update depth exceeded"
+- StudentQueuesPage becomes unresponsive
+- React warnings about infinite re-renders
+
+**Root Cause:**
+- Circular dependency in useEffect: `[queues, previousPositions]`
+- Effect updates `previousPositions` which triggers itself again
+- Creates infinite loop of state updates
+
+**Solution:**
+- Remove `previousPositions` from useEffect dependencies
+- Split logic into separate effects for different concerns
+- Only depend on `[queues]` for queue-related effects
+
+### 3. Admin Password Issues
 
 #### Problem: Forgot Admin Password
 

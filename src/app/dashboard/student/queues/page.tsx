@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import RoomIndicator from '@/components/RoomIndicator';
+import { ArrowLeftIcon, QueueListIcon, ClockIcon, CheckCircleIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 interface Queue {
   _id: string;
@@ -93,7 +94,7 @@ export default function StudentQueuesPage() {
     }
 
     // Find the highest priority queue for banner display
-    const priorityQueue = queues.find(queue => 
+    const priorityQueue = queues.find((queue: Queue) => 
       queue.status === 'waiting' && queue.position <= 3
     );
 
@@ -246,10 +247,10 @@ export default function StudentQueuesPage() {
 
   if (status === 'loading') {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[#2880CA] mx-auto"></div>
-          <p className="mt-4 text-gray-600">Chargement...</p>
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-200 border-t-[#2880CA] mx-auto"></div>
+          <p className="mt-4 text-slate-600 font-medium">Chargement...</p>
         </div>
       </div>
     );
@@ -260,59 +261,69 @@ export default function StudentQueuesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-[#2880CA] text-white py-6 px-4 sm:px-8">
-        <div className="max-w-6xl mx-auto flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold">Mes Files d'Attente</h1>
-            <p className="text-lg opacity-90">Bienvenue, {session.user.firstName} {session.user.name}!</p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      {/* Modern Header */}
+      <header className="bg-[#2880CA] backdrop-blur-md border-b border-blue-600 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-4">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => router.push('/dashboard/student')}
+                className="p-2 rounded-xl bg-white/20 hover:bg-white/30 transition-colors"
+              >
+                <ArrowLeftIcon className="w-5 h-5 text-white" />
+              </button>
+              <div>
+                <h1 className="text-2xl font-bold text-white">Mes Files d'Attente</h1>
+                <p className="text-blue-100">Suivez vos candidatures en temps réel</p>
+              </div>
+            </div>
+            <button
+              onClick={() => signOut({ callbackUrl: '/' })}
+              className="px-3 py-2 sm:px-4 sm:py-2 bg-red-500 hover:bg-red-600 text-white rounded-xl font-medium transition-colors text-sm sm:text-base"
+            >
+              Se déconnecter
+            </button>
           </div>
-          <button
-            onClick={() => signOut({ callbackUrl: '/' })}
-            className="bg-white text-[#2880CA] font-semibold py-2 px-4 rounded-lg hover:bg-gray-100 transition-colors"
-          >
-            Déconnexion
-          </button>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="max-w-6xl mx-auto py-8 px-4 sm:px-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Position Banner */}
         {showPositionBanner && (
-          <div className={`mb-6 p-4 rounded-lg border-2 ${
+          <div className={`mb-6 p-6 rounded-2xl border-2 shadow-lg ${
             showPositionBanner.position === 1 
-              ? 'bg-green-50 border-green-200 text-green-800 animate-pulse'
-              : 'bg-yellow-50 border-yellow-200 text-yellow-800'
+              ? 'bg-gradient-to-r from-emerald-50 to-green-50 border-emerald-200 text-emerald-800 animate-pulse'
+              : 'bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-200 text-amber-800'
           }`}>
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${
-                  showPositionBanner.position === 1 ? 'bg-green-500 text-white' : 'bg-yellow-500 text-white'
+              <div className="flex items-center space-x-4">
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg shadow-lg ${
+                  showPositionBanner.position === 1 ? 'bg-emerald-500 text-white' : 'bg-amber-500 text-white'
                 }`}>
                   #{showPositionBanner.position}
                 </div>
                 <div>
                   {showPositionBanner.position === 1 ? (
                     <div>
-                      <p className="font-semibold text-lg">Vous êtes le prochain !</p>
+                      <p className="font-bold text-xl">Vous êtes le prochain !</p>
                       <div className="flex items-center mt-1">
                         <span className="text-base">Direction </span>
                         <RoomIndicator room={showPositionBanner.room} size="sm" className="ml-2" />
                       </div>
                     </div>
                   ) : (
-                    <p className="font-semibold text-lg">Votre tour arrive bientôt ! Position #{showPositionBanner.position}</p>
+                    <p className="font-bold text-xl">Votre tour arrive bientôt ! Position #{showPositionBanner.position}</p>
                   )}
                 </div>
               </div>
               {showPositionBanner.position > 3 && (
                 <button
                   onClick={() => setShowPositionBanner(null)}
-                  className="text-gray-500 hover:text-gray-700"
+                  className="p-2 rounded-lg hover:bg-white/50 transition-colors"
                 >
-                  ✕
+                  <XMarkIcon className="w-5 h-5" />
                 </button>
               )}
             </div>
@@ -321,10 +332,10 @@ export default function StudentQueuesPage() {
 
         {/* Message Display */}
         {message && (
-          <div className={`mb-6 p-4 rounded-md ${
+          <div className={`mb-6 p-4 rounded-xl border ${
             message.type === 'error'
-              ? 'bg-red-50 border border-red-200 text-red-700'
-              : 'bg-green-50 border border-green-200 text-green-700'
+              ? 'bg-red-50 border-red-200 text-red-700'
+              : 'bg-emerald-50 border-emerald-200 text-emerald-700'
           }`}>
             {message.text}
           </div>
@@ -332,25 +343,25 @@ export default function StudentQueuesPage() {
 
         {/* Header */}
         <div className="mb-8">
-          <h2 className="text-2xl font-semibold text-gray-800 mb-2">Vos Files d'Attente Actives</h2>
-          <p className="text-gray-600">
+          <h2 className="text-3xl font-bold text-slate-900 mb-2">Vos Files d'Attente Actives</h2>
+          <p className="text-slate-600 text-lg">
             Consultez vos positions dans les files d'attente des entreprises.
           </p>
         </div>
 
         {/* Queues Summary */}
         {!isLoading && queues.length > 0 && (
-          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6 mb-6">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">Mes Files d'Attente</h2>
-                <p className="text-gray-600 mt-1">
+                <h2 className="text-2xl font-bold text-slate-900">Mes Files d'Attente</h2>
+                <p className="text-slate-600 mt-1">
                   {queues.length} file{queues.length > 1 ? 's' : ''} d'attente active{queues.length > 1 ? 's' : ''}
                 </p>
               </div>
               <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-sm text-gray-600">Mise à jour automatique</span>
+                <div className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse"></div>
+                <span className="text-sm text-slate-600">Mise à jour automatique</span>
               </div>
             </div>
           </div>
@@ -359,24 +370,22 @@ export default function StudentQueuesPage() {
         {/* Queues List */}
         {isLoading ? (
           <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2880CA] mx-auto"></div>
-            <p className="mt-4 text-gray-600">Chargement des files d'attente...</p>
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-[#2880CA] mx-auto"></div>
+            <p className="mt-4 text-slate-600 font-medium">Chargement des files d'attente...</p>
           </div>
         ) : queues.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-lg shadow-md">
-            <div className="w-32 h-32 bg-gradient-to-br from-blue-50 to-blue-100 rounded-full flex items-center justify-center mx-auto mb-8">
-              <svg className="w-16 h-16 text-[#2880CA]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-              </svg>
+          <div className="text-center py-16 bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20">
+            <div className="w-32 h-32 bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-8">
+              <QueueListIcon className="w-16 h-16 text-[#2880CA]" />
             </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-3">Aucune file d'attente active</h3>
-            <p className="text-lg text-gray-600 mb-8 max-w-md mx-auto">
+            <h3 className="text-2xl font-bold text-slate-900 mb-3">Aucune file d'attente active</h3>
+            <p className="text-lg text-slate-600 mb-8 max-w-md mx-auto">
               Vous n'êtes actuellement dans aucune file d'attente. Rejoignez une file pour commencer vos entretiens !
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button
                 onClick={() => router.push('/dashboard/student/companies')}
-                className="bg-[#2880CA] hover:bg-[#1e5f8a] text-white px-8 py-4 rounded-lg transition-colors inline-flex items-center justify-center font-semibold shadow-lg hover:shadow-xl"
+                className="bg-gradient-to-r from-[#2880CA] to-blue-600 hover:from-blue-600 hover:to-[#2880CA] text-white px-8 py-4 rounded-xl transition-all duration-300 transform hover:scale-105 inline-flex items-center justify-center font-semibold shadow-lg hover:shadow-xl"
               >
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -385,34 +394,30 @@ export default function StudentQueuesPage() {
               </button>
               <button
                 onClick={() => router.push('/dashboard/student/history')}
-                className="bg-white hover:bg-gray-50 text-[#2880CA] border-2 border-[#2880CA] px-8 py-4 rounded-lg transition-colors inline-flex items-center justify-center font-semibold"
+                className="bg-white/70 hover:bg-white text-[#2880CA] border-2 border-[#2880CA] px-8 py-4 rounded-xl transition-all duration-300 transform hover:scale-105 inline-flex items-center justify-center font-semibold backdrop-blur-sm"
               >
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+                <ClockIcon className="w-5 h-5 mr-2" />
                 Voir l'historique
               </button>
             </div>
           </div>
         ) : (
           <div className="space-y-6">
-            {queues.map((queue) => (
-              <div key={queue._id} className="bg-white rounded-lg shadow-lg p-6 border border-gray-200 hover:shadow-xl transition-shadow duration-200">
-                <div className="flex justify-between items-start mb-4">
+            {queues.map((queue: Queue) => (
+              <div key={queue._id} className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6 hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.02]">
+                <div className="flex justify-between items-start mb-6">
                   <div className="flex-1">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-xl font-semibold text-gray-900">{queue.companyName}</h3>
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-2xl font-bold text-slate-900">{queue.companyName}</h3>
                       <RoomIndicator room={queue.room} size="sm" />
                     </div>
-                    <div className="flex items-center space-x-4 text-sm text-gray-600">
-                      <span className="flex items-center">
-                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
+                    <div className="flex items-center space-x-6 text-sm text-slate-600">
+                      <span className="flex items-center bg-slate-100 px-3 py-1 rounded-full">
+                        <ClockIcon className="w-4 h-4 mr-2" />
                         {queue.estimatedDuration} min
                       </span>
-                      <span className="flex items-center">
-                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <span className="flex items-center bg-slate-100 px-3 py-1 rounded-full">
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                         </svg>
                         {getOpportunityTypeLabel(queue.opportunityType)}
@@ -421,49 +426,49 @@ export default function StudentQueuesPage() {
                     </div>
                   </div>
                   <div className="flex items-center space-x-2 ml-4">
-                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(queue.status)}`}>
+                    <span className={`px-3 py-1 text-xs font-semibold rounded-full ${getStatusColor(queue.status)}`}>
                       {getStatusLabel(queue.status)}
                     </span>
                   </div>
                 </div>
 
                 {/* Position and Progress */}
-                <div className="mb-4">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-medium text-gray-700">Votre position</span>
-                    <div className="flex items-center space-x-2">
+                <div className="mb-6">
+                  <div className="flex justify-between items-center mb-4">
+                    <span className="text-sm font-semibold text-slate-700">Votre position</span>
+                    <div className="flex items-center space-x-3">
                       {queue.status === 'in_progress' && (
-                        <span className="px-2 py-1 text-xs font-semibold bg-green-100 text-green-800 rounded-full animate-pulse">
+                        <span className="px-3 py-1 text-xs font-bold bg-emerald-100 text-emerald-800 rounded-full animate-pulse">
                           EN COURS
                         </span>
                       )}
                       {queue.position === 1 && queue.status === 'waiting' && (
-                        <span className="px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded-full animate-pulse">
+                        <span className="px-3 py-1 text-xs font-bold bg-blue-100 text-blue-800 rounded-full animate-pulse">
                           VOTRE TOUR !
                         </span>
                       )}
-                      <span className={`px-3 py-1 text-sm font-bold rounded-full ${getPositionBadgeColor(queue.position)}`}>
+                      <span className={`px-4 py-2 text-lg font-bold rounded-xl shadow-lg ${getPositionBadgeColor(queue.position)}`}>
                         #{queue.position}
                       </span>
                     </div>
                   </div>
                   
                   {/* Progress Bar */}
-                  <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="w-full bg-slate-200 rounded-full h-3 mb-4">
                     <div 
-                      className={`h-2 rounded-full transition-all duration-300 ${
+                      className={`h-3 rounded-full transition-all duration-500 ${
                         queue.status === 'in_progress' 
-                          ? 'bg-green-500' 
+                          ? 'bg-gradient-to-r from-emerald-500 to-green-500' 
                           : queue.position === 1 && queue.status === 'waiting'
-                          ? 'bg-blue-500'
-                          : 'bg-[#2880CA]'
+                          ? 'bg-gradient-to-r from-blue-500 to-[#2880CA]'
+                          : 'bg-gradient-to-r from-[#2880CA] to-blue-600'
                       }`}
                       style={{ width: `${calculateProgress(queue.position, queue.position + 5)}%` }}
                     ></div>
                   </div>
                   
-                  <div className="flex justify-between items-center mt-2">
-                    <p className="text-xs text-gray-500">
+                  <div className="flex justify-between items-center">
+                    <p className="text-sm text-slate-500">
                       Rejoint le {new Date(queue.joinedAt).toLocaleDateString('fr-FR', {
                         day: 'numeric',
                         month: 'long',
@@ -471,16 +476,16 @@ export default function StudentQueuesPage() {
                         minute: '2-digit'
                       })}
                     </p>
-                    <p className="text-xs text-gray-600 font-medium">
+                    <p className="text-sm text-slate-600 font-medium">
                       Temps d'attente estimé: {getEstimatedWaitTime(queue.position, queue.estimatedDuration)} min
                     </p>
                   </div>
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex justify-end space-x-2">
+                <div className="flex justify-end space-x-3">
                   {queue.status === 'in_progress' ? (
-                    <div className="px-4 py-2 bg-green-100 text-green-800 rounded-md font-semibold">
+                    <div className="px-6 py-3 bg-emerald-100 text-emerald-800 rounded-xl font-semibold border border-emerald-200">
                       Entretien en cours
                     </div>
                   ) : queue.status === 'waiting' ? (
@@ -490,7 +495,7 @@ export default function StudentQueuesPage() {
                         <button
                           onClick={() => handleRescheduleInterview(queue._id)}
                           disabled={reschedulingQueueId === queue._id}
-                          className="px-3 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                          className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-sm font-medium shadow-lg"
                           title="Reporter l'entretien à la fin de la file"
                         >
                           {reschedulingQueueId === queue._id ? 'Report...' : 'Reporter'}
@@ -501,7 +506,7 @@ export default function StudentQueuesPage() {
                       <button
                         onClick={() => handleCancelInterview(queue._id)}
                         disabled={cancellingQueueId === queue._id}
-                        className="px-3 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                        className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-sm font-medium shadow-lg"
                         title="Annuler l'entretien"
                       >
                         {cancellingQueueId === queue._id ? 'Annulation...' : 'Annuler'}
@@ -511,14 +516,14 @@ export default function StudentQueuesPage() {
                       <button
                         onClick={() => handleLeaveQueue(queue._id)}
                         disabled={leavingQueueId === queue._id}
-                        className="px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                        className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-sm font-medium shadow-lg"
                         title="Quitter la file d'attente"
                       >
                         {leavingQueueId === queue._id ? 'Sortie...' : 'Quitter'}
                       </button>
                     </>
                   ) : (
-                    <div className="px-4 py-2 bg-gray-100 text-gray-600 rounded-md font-semibold text-sm">
+                    <div className="px-6 py-3 bg-slate-100 text-slate-600 rounded-xl font-semibold text-sm border border-slate-200">
                       {getStatusLabel(queue.status)}
                     </div>
                   )}
@@ -530,45 +535,45 @@ export default function StudentQueuesPage() {
 
         {/* Priority System Legend */}
         {queues.length > 0 && (
-          <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-blue-800 mb-4">Système de Priorité</h3>
-            <div className="grid md:grid-cols-2 gap-4 text-sm">
+          <div className="mt-8 bg-white/70 backdrop-blur-sm border border-white/20 rounded-2xl shadow-xl p-8">
+            <h3 className="text-xl font-bold text-slate-900 mb-6">Système de Priorité</h3>
+            <div className="grid md:grid-cols-2 gap-8 text-sm">
               <div>
-                <h4 className="font-medium text-blue-700 mb-2">Catégories de Priorité</h4>
-                <div className="space-y-2">
-                  <div className="flex items-center space-x-2">
-                    <span className="px-2 py-1 text-xs font-semibold bg-purple-100 text-purple-800 rounded-full">Comité</span>
-                    <span className="text-gray-600">Priorité la plus élevée</span>
+                <h4 className="font-semibold text-slate-700 mb-4">Catégories de Priorité</h4>
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-3">
+                    <span className="px-3 py-1 text-xs font-semibold bg-purple-100 text-purple-800 rounded-full">Comité</span>
+                    <span className="text-slate-600">Priorité la plus élevée</span>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded-full">ENSA</span>
-                    <span className="text-gray-600">Étudiants ENSA</span>
+                  <div className="flex items-center space-x-3">
+                    <span className="px-3 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded-full">ENSA</span>
+                    <span className="text-slate-600">Étudiants ENSA</span>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="px-2 py-1 text-xs font-semibold bg-gray-100 text-gray-800 rounded-full">Externe</span>
-                    <span className="text-gray-600">Étudiants externes</span>
+                  <div className="flex items-center space-x-3">
+                    <span className="px-3 py-1 text-xs font-semibold bg-slate-100 text-slate-800 rounded-full">Externe</span>
+                    <span className="text-slate-600">Étudiants externes</span>
                   </div>
                 </div>
               </div>
               <div>
-                <h4 className="font-medium text-blue-700 mb-2">Types d'Opportunité</h4>
-                <div className="space-y-2">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-gray-600">PFA/PFE</span>
-                    <span className="text-green-600 font-medium">Priorité 1</span>
+                <h4 className="font-semibold text-slate-700 mb-4">Types d'Opportunité</h4>
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-3">
+                    <span className="text-slate-600">PFA/PFE</span>
+                    <span className="text-emerald-600 font-semibold">Priorité 1</span>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-gray-600">Emploi</span>
-                    <span className="text-yellow-600 font-medium">Priorité 2</span>
+                  <div className="flex items-center space-x-3">
+                    <span className="text-slate-600">Emploi</span>
+                    <span className="text-amber-600 font-semibold">Priorité 2</span>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-gray-600">Stage d'observation</span>
-                    <span className="text-orange-600 font-medium">Priorité 3</span>
+                  <div className="flex items-center space-x-3">
+                    <span className="text-slate-600">Stage d'observation</span>
+                    <span className="text-orange-600 font-semibold">Priorité 3</span>
                   </div>
                 </div>
               </div>
             </div>
-            <div className="mt-4 p-3 bg-blue-100 rounded-lg">
+            <div className="mt-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
               <p className="text-sm text-blue-800">
                 <strong>Pattern d'alternance :</strong> 3 Comité → 2 Externes → 2 ENSA → répéter
               </p>
@@ -579,21 +584,12 @@ export default function StudentQueuesPage() {
         {/* Auto-refresh indicator */}
         {queues.length > 0 && (
           <div className="mt-8 text-center">
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-slate-500">
               🔄 Mise à jour automatique toutes les 5 secondes
             </p>
           </div>
         )}
       </main>
-
-      {/* Footer */}
-      <footer className="bg-gray-800 text-white py-6 px-4 sm:px-8 mt-12">
-        <div className="max-w-6xl mx-auto text-center">
-          <p className="text-gray-300">
-            © 2025 ENSA Tétouan - Forum des Entreprises. Tous droits réservés.
-          </p>
-        </div>
-      </footer>
     </div>
   );
 }

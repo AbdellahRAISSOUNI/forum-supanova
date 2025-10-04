@@ -2,7 +2,67 @@
 
 This document summarizes the critical issues that were identified and fixed in the Forum des Entreprises system.
 
-## 1. Syntax Errors in Core Files ✅ FIXED
+## 1. Queue Joining Functionality Issues ✅ FIXED (January 2025)
+
+### Latest Fixes (January 2025):
+
+#### Multiple Queue Joining Fix ✅ FIXED
+**Problem**: Students were unable to join multiple company queues simultaneously due to overly restrictive conflict checking.
+
+**Root Cause**: The `checkQueueConflictsAtomic` function was preventing students from joining any new queue if they had interviews in positions ≤ 3, which is too restrictive for a forum environment.
+
+**Solution**: 
+- Removed the restriction on joining multiple queues based on position
+- Students can now apply to multiple companies simultaneously
+- Only restriction remaining: cannot join a new queue while having an active interview in progress
+
+**Files Modified**:
+- `src/lib/services/atomicQueueService.ts` - Removed position-based conflict checking
+- `src/lib/services/queueService.ts` - Removed position-based conflict checking
+
+**Impact**: Students can now apply to multiple companies at the same time, improving their chances of getting interviews.
+
+#### Dropdown Text Color Fix ✅ FIXED
+**Problem**: Dropdown options in the opportunity type selection had light text that was hard to read.
+
+**Solution**: Added explicit text color classes to the select element and option elements.
+
+**Files Modified**:
+- `src/app/dashboard/student/companies/page.tsx` - Added `text-slate-900` and `bg-white` classes
+
+**Impact**: Better readability of dropdown options in the join queue modal.
+
+### Issues Found:
+- **MongoDB `updatedAt` Field Conflict**: Manual setting of `updatedAt` conflicted with Mongoose automatic timestamps
+- **Missing Required Field**: `queuePosition` field was not set when creating new interviews
+- **Data Inconsistency**: Dashboard showed different queue counts than queues page
+- **React Infinite Loop**: Circular dependency in useEffect causing "Maximum update depth exceeded"
+
+### Fixes Applied:
+- ✅ **Fixed MongoDB Timestamp Conflicts**
+  - Removed manual `updatedAt` setting from all atomic operations
+  - Let Mongoose handle timestamps automatically via `timestamps: true`
+  - Fixed in `atomicQueueService.ts` and `queueService.ts`
+- ✅ **Fixed Interview Validation Errors**
+  - Added `queuePosition` calculation before creating new interviews
+  - Set temporary position during creation, then properly reorder via `atomicUpdateQueuePosition`
+  - Enhanced error handling with detailed validation messages
+- ✅ **Fixed Data Consistency Issues**
+  - Updated student stats API to count only active queues (waiting + in_progress)
+  - Added `totalCompleted` field for better statistics display
+  - Made queue counts consistent across dashboard and queues page
+- ✅ **Fixed React Performance Issues**
+  - Removed circular dependency in useEffect hooks
+  - Split logic into separate focused effects
+  - Optimized position tracking and banner update logic
+
+### Impact:
+- Students can now successfully join queues without errors
+- Dashboard and queues page show consistent data
+- No more React infinite loop errors
+- Better user experience with accurate queue information
+
+## 2. Syntax Errors in Core Files ✅ FIXED
 
 ### Issues Found:
 - Missing opening/closing braces in auth callbacks
