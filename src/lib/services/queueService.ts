@@ -567,7 +567,7 @@ export async function getQueueForRoom(room: string): Promise<{
     await connectDB();
 
     // Get company for this room
-    const company = await Company.findOne({ room, isActive: true });
+    const company = await Company.findOne({ room, isActive: true }).select('name room estimatedInterviewDuration imageId imageUrl');
     if (!company) {
       throw new Error('Aucune entreprise trouvée pour cette salle');
     }
@@ -607,7 +607,9 @@ export async function getQueueForRoom(room: string): Promise<{
         _id: company._id.toString(),
         name: company.name,
         room: company.room,
-        estimatedInterviewDuration: company.estimatedInterviewDuration
+        estimatedInterviewDuration: company.estimatedInterviewDuration,
+        imageId: company.imageId,
+        imageUrl: company.imageUrl
       },
       currentInterview: currentInterview ? {
         interviewId: currentInterview._id.toString(),

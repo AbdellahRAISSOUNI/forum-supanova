@@ -35,7 +35,7 @@ export async function GET() {
 
     const companies = await Company.find({})
       .sort({ name: 1 })
-      .select('name sector website room estimatedInterviewDuration isActive createdAt updatedAt');
+      .select('name sector website room estimatedInterviewDuration isActive imageId imageUrl createdAt updatedAt');
 
     return NextResponse.json({ companies }, { status: 200 });
   } catch (error) {

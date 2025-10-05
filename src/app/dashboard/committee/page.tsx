@@ -24,6 +24,8 @@ interface QueueData {
     name: string;
     room: string;
     estimatedInterviewDuration: number;
+    imageId?: string;
+    imageUrl?: string;
   };
   currentInterview: {
     interviewId: string;
@@ -460,9 +462,22 @@ export default function CommitteeDashboard() {
                 <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-white truncate">
                   Gestion des Files d'Attente
                 </h1>
-                <p className="text-blue-100 text-sm sm:text-base truncate">
-              {queueData?.company.name} - Salle {queueData?.company.room}
-            </p>
+                <div className="flex items-center space-x-2">
+                  {queueData?.company.imageUrl && (
+                    <img
+                      src={queueData.company.imageUrl}
+                      alt={`${queueData.company.name} logo`}
+                      className="w-6 h-6 rounded border border-white/20"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                      }}
+                    />
+                  )}
+                  <p className="text-blue-100 text-sm sm:text-base truncate">
+                    {queueData?.company.name} - Salle {queueData?.company.room}
+                  </p>
+                </div>
           </div>
             </div>
             <div className="flex items-center justify-between w-full sm:w-auto space-x-2 sm:space-x-3">

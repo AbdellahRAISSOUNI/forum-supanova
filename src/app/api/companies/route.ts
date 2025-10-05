@@ -19,7 +19,7 @@ export async function GET() {
     // Get only active companies
     const companies = await Company.find({ isActive: true })
       .sort({ name: 1 })
-      .select('name sector website room estimatedInterviewDuration');
+      .select('name sector website room estimatedInterviewDuration imageId imageUrl');
 
     // For students, also get their queue status for each company
     if (session.user.role === 'student') {

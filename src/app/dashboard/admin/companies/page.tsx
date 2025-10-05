@@ -13,7 +13,9 @@ import {
   CheckCircleIcon,
   XCircleIcon,
   UserGroupIcon,
-  ClockIcon
+  ClockIcon,
+  PhotoIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 
 interface Company {
@@ -24,6 +26,8 @@ interface Company {
   room: string;
   estimatedInterviewDuration: number;
   isActive: boolean;
+  imageId?: string;
+  imageUrl?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -95,6 +99,9 @@ export default function AdminCompaniesPage() {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [queueData, setQueueData] = useState<QueueData | null>(null);
   const [isLoadingQueue, setIsLoadingQueue] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -198,6 +205,8 @@ export default function AdminCompaniesPage() {
       room: company.room,
       estimatedInterviewDuration: company.estimatedInterviewDuration,
     });
+    setSelectedImage(null);
+    setImagePreview(null);
     setIsModalOpen(true);
   };
 
@@ -259,6 +268,90 @@ export default function AdminCompaniesPage() {
       estimatedInterviewDuration: 20,
     });
     setErrors({});
+    setSelectedImage(null);
+    setImagePreview(null);
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+      if (!allowedTypes.includes(file.type)) {
+        setMessage({ type: 'error', text: 'Type de fichier non supporté. Utilisez JPEG, PNG ou WebP' });
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (file.size > maxSize) {
+        setMessage({ type: 'error', text: 'Fichier trop volumineux. Taille maximum: 5MB' });
+        return;
+      }
+
+      setSelectedImage(file);
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleImageUpload = async (companyId: string) => {
+    if (!selectedImage) return;
+
+    setIsUploadingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append('image', selectedImage);
+
+      const response = await fetch(`/api/admin/companies/${companyId}/image`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setMessage({ type: 'success', text: 'Image téléchargée avec succès' });
+        setSelectedImage(null);
+        setImagePreview(null);
+        fetchCompanies(); // Refresh companies list
+        
+        // Auto-close modal after successful upload
+        setTimeout(() => {
+          closeModal();
+        }, 1500); // Close after 1.5 seconds to show success message
+      } else {
+        setMessage({ type: 'error', text: data.error || 'Erreur lors du téléchargement de l\'image' });
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Erreur de connexion au serveur' });
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  const handleImageDelete = async (companyId: string) => {
+    try {
+      const response = await fetch(`/api/admin/companies/${companyId}/image`, {
+        method: 'DELETE',
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setMessage({ type: 'success', text: 'Image supprimée avec succès' });
+        fetchCompanies(); // Refresh companies list
+      } else {
+        setMessage({ type: 'error', text: data.error || 'Erreur lors de la suppression de l\'image' });
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Erreur de connexion au serveur' });
+    }
   };
 
   const openModal = () => {
@@ -427,6 +520,9 @@ export default function AdminCompaniesPage() {
                 <thead className="bg-gray-50/70">
                   <tr>
                     <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Image
+                    </th>
+                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Nom
                     </th>
                     <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
@@ -452,6 +548,25 @@ export default function AdminCompaniesPage() {
                 <tbody className="bg-white/50 divide-y divide-gray-200/50">
                   {companies.map((company) => (
                     <tr key={company._id} className="hover:bg-white/70 transition-colors">
+                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          {company.imageUrl ? (
+                            <img
+                              src={company.imageUrl}
+                              alt={`${company.name} logo`}
+                              className="w-12 h-12 rounded-lg object-cover border border-gray-200"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                                target.nextElementSibling?.classList.remove('hidden');
+                              }}
+                            />
+                          ) : null}
+                          <div className={`w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center border border-gray-200 ${company.imageUrl ? 'hidden' : ''}`}>
+                            <BuildingOfficeIcon className="w-6 h-6 text-gray-400" />
+                          </div>
+                        </div>
+                      </td>
                       <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">{company.name}</div>
                         <div className="text-xs sm:text-sm text-gray-500 truncate max-w-[200px]">{company.website}</div>
@@ -653,6 +768,82 @@ export default function AdminCompaniesPage() {
                   />
                   {errors.estimatedInterviewDuration && <p className="mt-1 text-sm text-red-600">{errors.estimatedInterviewDuration}</p>}
                 </div>
+
+                {/* Image Upload Section */}
+                {editingCompany && (
+                  <div className="border-t pt-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Image de l'entreprise
+                    </label>
+                    
+                    {/* Current Image Display */}
+                    {editingCompany.imageUrl && (
+                      <div className="mb-4">
+                        <p className="text-sm text-gray-600 mb-2">Image actuelle:</p>
+                        <div className="flex items-center space-x-4">
+                          <img
+                            src={editingCompany.imageUrl}
+                            alt={`${editingCompany.name} logo`}
+                            className="w-20 h-20 rounded-lg object-cover border border-gray-200"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleImageDelete(editingCompany._id)}
+                            className="px-3 py-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-md transition-colors text-sm"
+                          >
+                            <XMarkIcon className="w-4 h-4 inline mr-1" />
+                            Supprimer
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Image Upload */}
+                    <div className="space-y-3">
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/jpg,image/png,image/webp"
+                        onChange={handleImageSelect}
+                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-[#2880CA] file:text-white hover:file:bg-[#1e5f8a] file:cursor-pointer"
+                      />
+                      
+                      {imagePreview && (
+                        <div className="space-y-2">
+                          <p className="text-sm text-gray-600">Aperçu:</p>
+                          <div className="flex items-center space-x-4">
+                            <img
+                              src={imagePreview}
+                              alt="Preview"
+                              className="w-20 h-20 rounded-lg object-cover border border-gray-200"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedImage(null);
+                                setImagePreview(null);
+                              }}
+                              className="px-3 py-2 text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-md transition-colors text-sm"
+                            >
+                              <XMarkIcon className="w-4 h-4 inline mr-1" />
+                              Annuler
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {selectedImage && (
+                        <button
+                          type="button"
+                          onClick={() => handleImageUpload(editingCompany._id)}
+                          disabled={isUploadingImage}
+                          className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                        >
+                          {isUploadingImage ? 'Téléchargement...' : 'Télécharger l\'image'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex justify-end space-x-3 pt-4">
                   <button

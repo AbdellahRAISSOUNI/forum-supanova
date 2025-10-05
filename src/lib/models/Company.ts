@@ -7,6 +7,8 @@ export interface ICompany extends Document {
   room: string;
   estimatedInterviewDuration: number;
   isActive: boolean;
+  imageId?: string; // GridFS file ID for company image
+  imageUrl?: string; // Cached URL for the image
   createdAt: Date;
   updatedAt: Date;
 }
@@ -42,6 +44,14 @@ const companySchema = new mongoose.Schema<ICompany>({
   isActive: {
     type: Boolean,
     default: true,
+  },
+  imageId: {
+    type: String,
+    default: null,
+  },
+  imageUrl: {
+    type: String,
+    default: null,
   },
 }, {
   timestamps: true,
