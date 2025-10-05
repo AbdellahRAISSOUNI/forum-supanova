@@ -6,6 +6,8 @@ import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
+import RoomStatusIndicator from '@/components/RoomStatusIndicator';
+import AdvancedQueueManagement from '@/components/AdvancedQueueManagement';
 
 interface AdminStats {
   totalStudents: number;
@@ -472,6 +474,22 @@ export default function AdminDashboard() {
               </div>
             </div>
           </div>
+
+          {/* Room Status Overview */}
+          <div className="border-t pt-8 mt-8">
+            <h3 className="text-xl font-semibold text-gray-800 mb-4">Statut des Salles</h3>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {queues.map((queue) => (
+                <RoomStatusIndicator 
+                  key={queue.companyId}
+                  roomId={queue.companyId}
+                  compact={false}
+                  refreshInterval={10000}
+                />
+              ))}
+            </div>
+          </div>
+
         {/* All Queues Overview */}
         <div className="bg-white rounded-lg shadow-md p-6">
           <div className="flex justify-between items-center mb-6">

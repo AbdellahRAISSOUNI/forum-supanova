@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import RoomIndicator from '@/components/RoomIndicator';
+import RoomStatusIndicator from '@/components/RoomStatusIndicator';
 import { ArrowLeftIcon, BuildingOfficeIcon, ClockIcon, GlobeAltIcon, QueueListIcon } from '@heroicons/react/24/outline';
 
 interface Company {
@@ -261,6 +262,23 @@ export default function StudentCompaniesPage() {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Room Status Section */}
+        {companies.length > 0 && (
+          <div className="mt-8 md:mt-12">
+            <h3 className="text-lg md:text-2xl font-bold text-slate-900 mb-4 md:mb-6">Statut des Salles</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+              {companies.map((company) => (
+                <RoomStatusIndicator 
+                  key={company._id}
+                  roomId={company._id}
+                  compact={true}
+                  refreshInterval={15000}
+                />
+              ))}
+            </div>
           </div>
         )}
 
