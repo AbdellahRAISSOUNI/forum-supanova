@@ -3,6 +3,18 @@
 import { useState, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { 
+  BuildingOfficeIcon, 
+  PlusIcon, 
+  PencilIcon, 
+  TrashIcon,
+  EyeIcon,
+  ArrowLeftIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  UserGroupIcon,
+  ClockIcon
+} from '@heroicons/react/24/outline';
 
 interface Company {
   _id: string;
@@ -22,6 +34,43 @@ interface CompanyFormData {
   website: string;
   room: string;
   estimatedInterviewDuration: number;
+}
+
+interface QueueData {
+  companyId: string;
+  companyName: string;
+  room: string;
+  estimatedDuration: number;
+  currentInterview: {
+    studentName: string;
+    studentStatus: string;
+    role: string;
+    opportunityType: string;
+    startedAt: string;
+    interviewId: string;
+  } | null;
+  nextInQueue: Array<{
+    studentName: string;
+    studentStatus: string;
+    role: string;
+    opportunityType: string;
+    position: number;
+    joinedAt: string;
+    priorityScore: number;
+    interviewId: string;
+  }>;
+  fullQueue: Array<{
+    studentName: string;
+    studentStatus: string;
+    role: string;
+    opportunityType: string;
+    position: number;
+    joinedAt: string;
+    priorityScore: number;
+    interviewId: string;
+  }>;
+  totalWaiting: number;
+  averageWaitTime: number;
 }
 
 export default function AdminCompaniesPage() {
@@ -44,6 +93,8 @@ export default function AdminCompaniesPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [queueData, setQueueData] = useState<QueueData | null>(null);
+  const [isLoadingQueue, setIsLoadingQueue] = useState(false);
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -150,9 +201,28 @@ export default function AdminCompaniesPage() {
     setIsModalOpen(true);
   };
 
-  const handleViewQueue = (company: Company) => {
+  const handleViewQueue = async (company: Company) => {
     setSelectedCompany(company);
     setShowQueueModal(true);
+    setIsLoadingQueue(true);
+    
+    try {
+      // Fetch queue data for this specific company
+      const response = await fetch(`/api/admin/queues?companyId=${company._id}`);
+      if (response.ok) {
+        const data = await response.json();
+        // Find the queue data for this company
+        const companyQueue = data.queues.find((queue: QueueData) => queue.companyId === company._id);
+        setQueueData(companyQueue || null);
+      } else {
+        setQueueData(null);
+      }
+    } catch (error) {
+      console.error('Error fetching queue data:', error);
+      setQueueData(null);
+    } finally {
+      setIsLoadingQueue(false);
+    }
   };
 
   const handleToggleActive = async (company: Company) => {
@@ -203,6 +273,46 @@ export default function AdminCompaniesPage() {
     resetForm();
   };
 
+  const formatTime = (dateString: string) => {
+    return new Date(dateString).toLocaleTimeString('fr-FR', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('fr-FR', {
+      day: 'numeric',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const getPriorityBadge = (role: string, studentStatus: string) => {
+    if (role === 'committee') {
+      return <span className="px-2 py-1 text-xs font-semibold bg-purple-100 text-purple-800 rounded-full">Comité</span>;
+    } else if (studentStatus === 'ensa') {
+      return <span className="px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded-full">ENSA</span>;
+    } else {
+      return <span className="px-2 py-1 text-xs font-semibold bg-gray-100 text-gray-800 rounded-full">Externe</span>;
+    }
+  };
+
+  const getOpportunityTypeBadge = (type: string) => {
+    switch (type) {
+      case 'pfa':
+      case 'pfe':
+        return <span className="px-2 py-1 text-xs font-semibold bg-green-100 text-green-800 rounded-full">PFA/PFE</span>;
+      case 'employment':
+        return <span className="px-2 py-1 text-xs font-semibold bg-yellow-100 text-yellow-800 rounded-full">Emploi</span>;
+      case 'observation':
+        return <span className="px-2 py-1 text-xs font-semibold bg-orange-100 text-orange-800 rounded-full">Observation</span>;
+      default:
+        return <span className="px-2 py-1 text-xs font-semibold bg-gray-100 text-gray-800 rounded-full">{type}</span>;
+    }
+  };
+
   if (status === 'loading') {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -219,148 +329,208 @@ export default function AdminCompaniesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-[#2880CA] text-white py-6 px-4 sm:px-8">
-        <div className="max-w-6xl mx-auto flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold">Gestion des Entreprises</h1>
-            <p className="text-lg opacity-90">Bienvenue, {session.user.firstName} {session.user.name}!</p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      {/* Modern Header - Mobile Responsive */}
+      <header className="bg-[#2880CA] backdrop-blur-md border-b border-blue-600 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-3 sm:py-4 space-y-3 sm:space-y-0">
+            <div className="flex items-center space-x-2 sm:space-x-4 w-full sm:w-auto">
+              <button
+                onClick={() => router.push('/dashboard/admin')}
+                className="p-2 rounded-xl bg-white/20 hover:bg-white/30 transition-colors flex-shrink-0"
+              >
+                <ArrowLeftIcon className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+              </button>
+              <div className="min-w-0 flex-1">
+                <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-white truncate">
+                  Gestion des Entreprises
+                </h1>
+                <p className="text-blue-100 text-sm sm:text-base truncate">
+                  Bienvenue, {session.user.firstName} {session.user.name}!
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center justify-between w-full sm:w-auto space-x-2 sm:space-x-3">
+              <div className="hidden md:block text-right">
+                <p className="text-xs sm:text-sm text-blue-100">Connecté en tant que</p>
+                <p className="text-white font-medium text-sm sm:text-base truncate">
+                  {session?.user.firstName} {session?.user.name}
+                </p>
           </div>
           <button
             onClick={() => signOut({ callbackUrl: '/' })}
-            className="bg-white text-[#2880CA] font-semibold py-2 px-4 rounded-lg hover:bg-gray-100 transition-colors"
+                className="bg-red-500 hover:bg-red-600 text-white px-3 sm:px-4 py-2 rounded-xl transition-colors backdrop-blur-sm border border-red-400/50 text-sm sm:text-base flex-shrink-0"
           >
-            Déconnexion
+                Se déconnecter
           </button>
+            </div>
+          </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="max-w-6xl mx-auto py-8 px-4 sm:px-8">
+      <main className="max-w-7xl mx-auto py-4 sm:py-8 px-3 sm:px-4 lg:px-8">
         {/* Message Display */}
         {message && (
-          <div className={`mb-6 p-4 rounded-md ${
+          <div className={`mb-6 p-4 rounded-lg ${
             message.type === 'error'
-              ? 'bg-red-50 border border-red-200 text-red-700'
-              : 'bg-green-50 border border-green-200 text-green-700'
+              ? 'bg-red-50/70 backdrop-blur-sm border border-red-200/50 text-red-700'
+              : 'bg-green-50/70 backdrop-blur-sm border border-green-200/50 text-green-700'
           }`}>
             {message.text}
           </div>
         )}
 
         {/* Header with Add Button */}
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-semibold text-gray-800">Liste des Entreprises</h2>
+        <div className="bg-white/70 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 p-4 sm:p-6 mb-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <h2 className="text-xl sm:text-2xl font-semibold text-gray-800">Liste des Entreprises</h2>
+              <p className="text-gray-600 text-sm sm:text-base">Gérez les entreprises participantes</p>
+            </div>
           <button
             onClick={openModal}
-            className="bg-[#2880CA] hover:bg-[#1e5f8a] text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+              className="inline-flex items-center px-4 sm:px-6 py-2 sm:py-3 bg-[#2880CA] hover:bg-[#1e5f8a] text-white font-semibold rounded-lg transition-colors"
           >
-            Ajouter une Entreprise
+              <PlusIcon className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+              <span className="hidden sm:inline">Ajouter une Entreprise</span>
+              <span className="sm:hidden">Ajouter</span>
           </button>
+          </div>
         </div>
 
         {/* Companies Table */}
         {isLoading ? (
-          <div className="text-center py-12">
+          <div className="bg-white/70 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 p-8 text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2880CA] mx-auto"></div>
             <p className="mt-4 text-gray-600">Chargement des entreprises...</p>
           </div>
         ) : companies.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-lg shadow-md">
+          <div className="bg-white/70 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 p-8 text-center">
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-              </svg>
+              <BuildingOfficeIcon className="w-8 h-8 text-gray-400" />
             </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">Aucune entreprise</h3>
             <p className="text-gray-600 mb-4">Commencez par ajouter votre première entreprise.</p>
             <button
               onClick={openModal}
-              className="bg-[#2880CA] hover:bg-[#1e5f8a] text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+              className="inline-flex items-center px-6 py-3 bg-[#2880CA] hover:bg-[#1e5f8a] text-white font-semibold rounded-lg transition-colors"
             >
+              <PlusIcon className="w-5 h-5 mr-2" />
               Ajouter une Entreprise
             </button>
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow-md overflow-hidden">
+          <div className="bg-white/70 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+              <table className="min-w-full divide-y divide-gray-200/50">
+                <thead className="bg-gray-50/70">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Nom
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
                       Secteur
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Salle
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
                       Durée
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Statut
                     </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
                           File d'Attente
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Actions
                         </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-white/50 divide-y divide-gray-200/50">
                   {companies.map((company) => (
-                    <tr key={company._id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
+                    <tr key={company._id} className="hover:bg-white/70 transition-colors">
+                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">{company.name}</div>
-                        <div className="text-sm text-gray-500">{company.website}</div>
+                        <div className="text-xs sm:text-sm text-gray-500 truncate max-w-[200px]">{company.website}</div>
+                        <div className="text-xs text-gray-500 sm:hidden">{company.sector}</div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900 hidden sm:table-cell">
                         {company.sector}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {company.room}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900 hidden md:table-cell">
                         {company.estimatedInterviewDuration} min
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full ${
                           company.isActive
                             ? 'bg-green-100 text-green-800'
                             : 'bg-red-100 text-red-800'
                         }`}>
-                          {company.isActive ? 'Actif' : 'Inactif'}
+                          {company.isActive ? (
+                            <>
+                              <CheckCircleIcon className="w-3 h-3 mr-1" />
+                              Actif
+                            </>
+                          ) : (
+                            <>
+                              <XCircleIcon className="w-3 h-3 mr-1" />
+                              Inactif
+                            </>
+                          )}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap hidden lg:table-cell">
                         <button
                           onClick={() => handleViewQueue(company)}
-                          className="text-[#2880CA] hover:text-[#1e5f8a] text-sm font-medium"
+                          className="inline-flex items-center text-[#2880CA] hover:text-[#1e5f8a] text-sm font-medium"
                         >
+                          <EyeIcon className="w-4 h-4 mr-1" />
                           Voir la File
                         </button>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex flex-col sm:flex-row gap-2">
                         <button
                           onClick={() => handleEdit(company)}
-                          className="text-[#2880CA] hover:text-[#1e5f8a] transition-colors"
+                            className="inline-flex items-center text-[#2880CA] hover:text-[#1e5f8a] transition-colors"
                         >
-                          Modifier
+                            <PencilIcon className="w-4 h-4 mr-1" />
+                            <span className="hidden sm:inline">Modifier</span>
                         </button>
                         <button
                           onClick={() => handleToggleActive(company)}
-                          className={`transition-colors ${
+                            className={`inline-flex items-center transition-colors ${
                             company.isActive
                               ? 'text-red-600 hover:text-red-800'
                               : 'text-green-600 hover:text-green-800'
                           }`}
                         >
-                          {company.isActive ? 'Désactiver' : 'Activer'}
+                            {company.isActive ? (
+                              <>
+                                <XCircleIcon className="w-4 h-4 mr-1" />
+                                <span className="hidden sm:inline">Désactiver</span>
+                              </>
+                            ) : (
+                              <>
+                                <CheckCircleIcon className="w-4 h-4 mr-1" />
+                                <span className="hidden sm:inline">Activer</span>
+                              </>
+                            )}
+                          </button>
+                          <button
+                            onClick={() => handleViewQueue(company)}
+                            className="inline-flex items-center text-blue-600 hover:text-blue-800 lg:hidden"
+                          >
+                            <EyeIcon className="w-4 h-4 mr-1" />
+                            <span className="hidden sm:inline">File</span>
                         </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -373,16 +543,23 @@ export default function AdminCompaniesPage() {
 
       {/* Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              closeModal();
+            }
+          }}
+        >
+          <div className="bg-white/95 backdrop-blur-md rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto border border-white/20">
             <div className="p-6">
-              <div className="flex justify-between items-center mb-4">
+              <div className="flex justify-between items-center mb-6">
                 <h3 className="text-lg font-semibold text-gray-900">
                   {editingCompany ? 'Modifier l\'Entreprise' : 'Ajouter une Entreprise'}
                 </h3>
                 <button
                   onClick={closeModal}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                  className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-full hover:bg-gray-100/50"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -400,7 +577,7 @@ export default function AdminCompaniesPage() {
                     id="name"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#2880CA] ${
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#2880CA] text-gray-900 placeholder-gray-500 ${
                       errors.name ? 'border-red-300' : 'border-gray-300'
                     }`}
                     placeholder="Nom de l'entreprise"
@@ -417,7 +594,7 @@ export default function AdminCompaniesPage() {
                     id="sector"
                     value={formData.sector}
                     onChange={(e) => setFormData({ ...formData, sector: e.target.value })}
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#2880CA] ${
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#2880CA] text-gray-900 placeholder-gray-500 ${
                       errors.sector ? 'border-red-300' : 'border-gray-300'
                     }`}
                     placeholder="Secteur d'activité"
@@ -434,7 +611,7 @@ export default function AdminCompaniesPage() {
                     id="website"
                     value={formData.website}
                     onChange={(e) => setFormData({ ...formData, website: e.target.value })}
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#2880CA] ${
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#2880CA] text-gray-900 placeholder-gray-500 ${
                       errors.website ? 'border-red-300' : 'border-gray-300'
                     }`}
                     placeholder="https://www.example.com"
@@ -451,7 +628,7 @@ export default function AdminCompaniesPage() {
                     id="room"
                     value={formData.room}
                     onChange={(e) => setFormData({ ...formData, room: e.target.value })}
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#2880CA] ${
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#2880CA] text-gray-900 placeholder-gray-500 ${
                       errors.room ? 'border-red-300' : 'border-gray-300'
                     }`}
                     placeholder="Numéro de salle"
@@ -470,7 +647,7 @@ export default function AdminCompaniesPage() {
                     max="120"
                     value={formData.estimatedInterviewDuration}
                     onChange={(e) => setFormData({ ...formData, estimatedInterviewDuration: parseInt(e.target.value) || 20 })}
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#2880CA] ${
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#2880CA] text-gray-900 placeholder-gray-500 ${
                       errors.estimatedInterviewDuration ? 'border-red-300' : 'border-gray-300'
                     }`}
                   />
@@ -501,15 +678,25 @@ export default function AdminCompaniesPage() {
 
       {/* Queue Modal */}
       {showQueueModal && selectedCompany && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
-            <div className="flex justify-between items-center p-6 border-b">
-              <h2 className="text-xl font-semibold text-gray-800">
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowQueueModal(false);
+            }
+          }}
+        >
+          <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden border border-white/20 transform transition-all duration-300 scale-100">
+            <div className="flex justify-between items-center p-6 border-b border-gray-200/50 bg-gradient-to-r from-[#2880CA]/10 to-blue-50/50">
+              <div>
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
                 File d'Attente - {selectedCompany.name}
               </h2>
+                <p className="text-sm text-gray-600 mt-1">Salle {selectedCompany.room}</p>
+              </div>
               <button
                 onClick={() => setShowQueueModal(false)}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-full hover:bg-gray-100/50"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -517,17 +704,120 @@ export default function AdminCompaniesPage() {
               </button>
             </div>
             
-            <div className="p-6">
-              <div className="text-center py-8">
-                <p className="text-gray-600">Fonctionnalité de visualisation de file d'attente en cours de développement.</p>
-                <p className="text-sm text-gray-500 mt-2">Utilisez le tableau de bord principal pour voir toutes les files d'attente.</p>
+            <div className="p-6 overflow-y-auto max-h-[70vh] bg-gradient-to-b from-white/50 to-gray-50/30">
+              {isLoadingQueue ? (
+                <div className="text-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2880CA] mx-auto"></div>
+                  <p className="mt-4 text-gray-600">Chargement de la file d'attente...</p>
+                </div>
+              ) : queueData ? (
+                <>
+                  {/* Current Interview */}
+                  {queueData.currentInterview && (
+                    <div className="mb-6 p-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200/50 shadow-lg">
+                      <div className="flex items-center space-x-3 mb-4">
+                        <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                        <h3 className="text-lg font-bold text-green-800">Entretien en Cours</h3>
+                      </div>
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div>
+                          <p className="font-semibold text-green-700 text-lg">{queueData.currentInterview.studentName}</p>
+                          <div className="flex items-center space-x-2 mt-2">
+                            {getOpportunityTypeBadge(queueData.currentInterview.opportunityType)}
+                            {getPriorityBadge(queueData.currentInterview.role, queueData.currentInterview.studentStatus)}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm text-green-600 font-medium">Commencé à</p>
+                          <p className="text-lg font-bold text-green-700">{formatTime(queueData.currentInterview.startedAt)}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Queue Statistics */}
+                  <div className="mb-6 p-4 bg-white/70 backdrop-blur-sm rounded-xl border border-white/50 shadow-sm">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+                      <div>
+                        <p className="text-2xl font-bold text-[#2880CA]">{queueData.totalWaiting}</p>
+                        <p className="text-sm text-gray-600">En attente</p>
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold text-green-600">{queueData.averageWaitTime}</p>
+                        <p className="text-sm text-gray-600">Min d'attente</p>
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold text-purple-600">{queueData.estimatedDuration}</p>
+                        <p className="text-sm text-gray-600">Min par entretien</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Full Queue */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                      <UserGroupIcon className="w-5 h-5 mr-2 text-[#2880CA]" />
+                      File d'Attente ({queueData.totalWaiting} étudiants)
+                    </h3>
+                    
+                    {queueData.fullQueue.length === 0 ? (
+                      <div className="text-center py-12">
+                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <UserGroupIcon className="w-8 h-8 text-gray-400" />
+                        </div>
+                        <p className="text-gray-600 text-lg">Aucun étudiant en attente</p>
+                        <p className="text-gray-500 text-sm mt-1">La file d'attente est vide</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {queueData.fullQueue.map((student, index) => (
+                          <div key={student.interviewId} className="flex items-center justify-between p-4 bg-white/70 backdrop-blur-sm rounded-xl border border-white/50 hover:bg-white/90 transition-all duration-200 shadow-sm hover:shadow-md">
+                            <div className="flex items-center space-x-4">
+                              <div className="w-10 h-10 bg-gradient-to-br from-[#2880CA] to-blue-600 text-white rounded-xl flex items-center justify-center font-bold shadow-lg">
+                                #{student.position}
+                              </div>
+                              <div>
+                                <p className="font-semibold text-gray-900">{student.studentName}</p>
+                                <div className="flex items-center space-x-2 mt-1">
+                                  {getOpportunityTypeBadge(student.opportunityType)}
+                                  {getPriorityBadge(student.role, student.studentStatus)}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-sm text-gray-600 font-medium">
+                                Arrivé: {formatDate(student.joinedAt)}
+                              </p>
+                              <p className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full mt-1">
+                                Score: {student.priorityScore}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-12">
+                  <div className="w-20 h-20 bg-gradient-to-br from-[#2880CA]/20 to-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <BuildingOfficeIcon className="w-10 h-10 text-[#2880CA]" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-800 mb-3">Aucune File d'Attente</h3>
+                  <p className="text-gray-600 mb-4 max-w-md mx-auto">
+                    Cette entreprise n'a actuellement aucune file d'attente active.
+                  </p>
+                  <p className="text-sm text-gray-500 mb-6">
+                    Les étudiants peuvent rejoindre la file d'attente en s'inscrivant aux entretiens.
+                  </p>
               </div>
+              )}
             </div>
             
-            <div className="flex justify-end space-x-3 p-6 border-t bg-gray-50">
+            <div className="flex justify-end space-x-3 p-6 border-t border-gray-200/50 bg-gradient-to-r from-gray-50/50 to-white/50">
               <button
                 onClick={() => setShowQueueModal(false)}
-                className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                className="px-6 py-3 text-gray-700 bg-white/80 backdrop-blur-sm border border-gray-300/50 rounded-xl hover:bg-white hover:shadow-md transition-all duration-200 font-medium"
               >
                 Fermer
               </button>
@@ -537,8 +827,8 @@ export default function AdminCompaniesPage() {
       )}
 
       {/* Footer */}
-      <footer className="bg-gray-800 text-white py-6 px-4 sm:px-8 mt-12">
-        <div className="max-w-6xl mx-auto text-center">
+      <footer className="bg-gray-800/90 backdrop-blur-sm text-white py-6 px-4 sm:px-6 lg:px-8 mt-12">
+        <div className="max-w-7xl mx-auto text-center">
           <p className="text-gray-300">
             © 2025 ENSA Tétouan - Forum des Entreprises. Tous droits réservés.
           </p>
