@@ -531,11 +531,16 @@ export default function Home() {
               whileInView={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8 }}
               viewport={{ once: true }}
-              className="relative"
+              className="relative group"
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-[#1e5f8a]/20 to-[#2880CA]/20 rounded-3xl blur-xl"></div>
-              <div className="relative bg-white/95 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-white/20">
-                <h3 className="text-2xl font-bold text-gray-800 mb-6">Jeudi 16 Octobre 2025</h3>
+              <div className="absolute inset-0 bg-gradient-to-br from-[#1e5f8a]/30 to-[#2880CA]/30 rounded-3xl blur-xl group-hover:blur-2xl transition-all duration-300"></div>
+              <div className="relative bg-gray-800/90 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-gray-700/50 group-hover:border-[#1e5f8a]/50 transition-all duration-300">
+                <h3 className="text-2xl font-bold text-white mb-6 flex items-center">
+                  <div className="w-8 h-8 bg-gradient-to-r from-[#1e5f8a] to-[#2880CA] rounded-lg flex items-center justify-center mr-3">
+                    <span className="text-white font-bold text-sm">16</span>
+                  </div>
+                  Jeudi 16 Octobre 2025
+                </h3>
                 <div className="space-y-4">
                   {[
                     { time: "09h30", event: "Ouverture des stands" },
@@ -548,11 +553,11 @@ export default function Home() {
                       initial={{ opacity: 0, x: 20 }}
                       whileInView={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.1, duration: 0.5 }}
-                      className="flex items-center space-x-4 p-3 rounded-xl hover:bg-gray-50 transition-colors"
+                      className="flex items-center space-x-4 p-4 rounded-xl hover:bg-gray-700/50 transition-all duration-300 group/item"
                     >
-                      <div className="w-3 h-3 bg-gradient-to-r from-[#1e5f8a] to-[#2880CA] rounded-full"></div>
-                      <span className="text-gray-700 font-medium">{item.time}</span>
-                      <span className="text-gray-600">{item.event}</span>
+                      <div className="w-3 h-3 bg-gradient-to-r from-[#1e5f8a] to-[#2880CA] rounded-full group-hover/item:scale-125 transition-transform duration-300"></div>
+                      <span className="text-[#1e5f8a] font-semibold min-w-[100px]">{item.time}</span>
+                      <span className="text-gray-300 group-hover/item:text-white transition-colors">{item.event}</span>
                     </motion.div>
                   ))}
                 </div>
