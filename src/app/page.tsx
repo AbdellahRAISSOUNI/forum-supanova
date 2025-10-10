@@ -273,13 +273,11 @@ export default function Home() {
               transition={{ delay: 0.2 }}
               className="flex items-center space-x-4"
             >
-              <motion.div 
-                whileHover={{ rotate: 360, scale: 1.1 }}
-                transition={{ duration: 0.6 }}
-                className="w-12 h-12 bg-gradient-to-br from-[#2880CA] to-[#1e5f8a] rounded-xl flex items-center justify-center shadow-lg"
+              <div
+                className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg bg-neutral-900 ring-1 ring-black/10"
               >
-                <span className="text-white font-bold text-xl">FE</span>
-              </motion.div>
+                <img src="/logo_forum.png" alt="Forum des Entreprises" className="w-12 h-12 object-contain" />
+              </div>
               <div>
                 <h1 className="text-xl font-bold text-gray-800">Forum des Entreprises</h1>
                 <p className="text-sm text-gray-600">ENSA Tétouan</p>
@@ -567,98 +565,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Footer */}
-      <motion.footer
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        transition={{ duration: 0.8 }}
-        viewport={{ once: true }}
-        className="relative bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white py-20 px-4 sm:px-6 lg:px-8"
-      >
-        <div className="absolute inset-0 bg-gradient-to-br from-[#2880CA]/5 to-[#1e5f8a]/5"></div>
-        <div className="max-w-7xl mx-auto relative">
-          <div className="grid md:grid-cols-3 gap-8 mb-12">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              viewport={{ once: true }}
-            >
-              <div className="flex items-center space-x-4 mb-6">
-                <motion.div
-                  whileHover={{ rotate: 360 }}
-                  transition={{ duration: 0.6 }}
-                  className="w-12 h-12 bg-gradient-to-br from-[#2880CA] to-[#1e5f8a] rounded-xl flex items-center justify-center shadow-lg"
-                >
-                  <span className="text-white font-bold text-lg">FE</span>
-                </motion.div>
-                <div>
-                  <h3 className="text-xl font-bold">Forum des Entreprises</h3>
-                  <p className="text-gray-400">ENSA Tétouan</p>
-                </div>
-              </div>
-              <p className="text-gray-400 leading-relaxed">
-                Connecter les étudiants aux opportunités professionnelles d'exception.
-              </p>
-            </motion.div>
-            
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              viewport={{ once: true }}
-            >
-              <h4 className="text-lg font-semibold mb-6">Contact</h4>
-              <div className="space-y-3 text-gray-400">
-                <p className="flex items-center">
-                  <span className="mr-3">📧</span>
-                  contact@ade-ensat.ma
-                </p>
-                <p className="flex items-center">
-                  <span className="mr-3">📱</span>
-                  +212 XXX XXX XXX
-                </p>
-                <p className="flex items-center">
-                  <span className="mr-3">📍</span>
-                  ENSA Tétouan, Maroc
-                </p>
-              </div>
-            </motion.div>
-            
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              viewport={{ once: true }}
-            >
-              <h4 className="text-lg font-semibold mb-6">Liens Utiles</h4>
-              <div className="space-y-3">
-                <Link href="/login" className="block text-gray-400 hover:text-white transition-colors">
-                  Se connecter
-                </Link>
-                <Link href="/register" className="block text-gray-400 hover:text-white transition-colors">
-                  S'inscrire
-                </Link>
-                <a href="#" className="block text-gray-400 hover:text-white transition-colors">
-                  Mentions légales
-                </a>
-              </div>
-            </motion.div>
-          </div>
-          
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            transition={{ delay: 0.4 }}
-            viewport={{ once: true }}
-            className="border-t border-gray-800 pt-8 text-center"
-          >
-            <p className="text-gray-400">
-              © 2025 Forum des Entreprises ENSA Tétouan. Tous droits réservés.
-            </p>
-          </motion.div>
-        </div>
-      </motion.footer>
+      {/* Global footer is rendered by Root layout */}
     </div>
   );
 }

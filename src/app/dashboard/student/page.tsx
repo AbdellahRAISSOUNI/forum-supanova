@@ -123,25 +123,29 @@ export default function StudentDashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      {/* Modern Header */}
+      {/* Modern Header - Mobile Responsive */}
       <header className="bg-[#2880CA] backdrop-blur-md border-b border-blue-600 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-4">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-3 sm:py-4 space-y-3 sm:space-y-0">
+            <div className="flex items-center space-x-2 sm:space-x-4 w-full sm:w-auto">
               <button
                 onClick={() => router.push('/')}
-                className="p-2 rounded-xl bg-white/20 hover:bg-white/30 transition-colors"
+                className="p-2 rounded-xl bg-white/20 hover:bg-white/30 transition-colors flex-shrink-0"
               >
-                <ArrowLeftIcon className="w-5 h-5 text-white" />
+                <ArrowLeftIcon className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               </button>
-              <div>
-                <h1 className="text-2xl font-bold text-white">Tableau de Bord</h1>
-                <p className="text-blue-100">Bonjour, {session.user.firstName} {session.user.name}</p>
+              <div className="min-w-0 flex-1">
+                <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-white truncate">
+                  Tableau de Bord
+                </h1>
+                <p className="text-blue-100 text-sm sm:text-base truncate">
+                  Bonjour, {session.user.firstName} {session.user.name}
+                </p>
               </div>
             </div>
             <button
               onClick={() => signOut({ callbackUrl: '/' })}
-              className="px-3 py-2 sm:px-4 sm:py-2 bg-red-500 hover:bg-red-600 text-white rounded-xl font-medium transition-colors text-sm sm:text-base"
+              className="bg-red-500 hover:bg-red-600 text-white px-3 sm:px-4 py-2 rounded-xl transition-colors backdrop-blur-sm border border-red-400/50 text-sm sm:text-base flex-shrink-0 self-end sm:self-auto"
             >
               Se déconnecter
             </button>
