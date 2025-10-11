@@ -537,53 +537,6 @@ export default function StudentQueuesPage() {
           </div>
         )}
 
-        {/* Priority System Legend */}
-        {queues.length > 0 && (
-          <div className="mt-8 bg-white/70 backdrop-blur-sm border border-white/20 rounded-2xl shadow-xl p-8">
-            <h3 className="text-xl font-bold text-slate-900 mb-6">Système de Priorité</h3>
-            <div className="grid md:grid-cols-2 gap-8 text-sm">
-              <div>
-                <h4 className="font-semibold text-slate-700 mb-4">Catégories de Priorité</h4>
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-3">
-                    <span className="px-3 py-1 text-xs font-semibold bg-purple-100 text-purple-800 rounded-full">Comité</span>
-                    <span className="text-slate-600">Priorité la plus élevée</span>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <span className="px-3 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded-full">ENSA</span>
-                    <span className="text-slate-600">Étudiants ENSA</span>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <span className="px-3 py-1 text-xs font-semibold bg-slate-100 text-slate-800 rounded-full">Externe</span>
-                    <span className="text-slate-600">Étudiants externes</span>
-                  </div>
-                </div>
-              </div>
-              <div>
-                <h4 className="font-semibold text-slate-700 mb-4">Types d'Opportunité</h4>
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-3">
-                    <span className="text-slate-600">PFA/PFE</span>
-                    <span className="text-emerald-600 font-semibold">Priorité 1</span>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <span className="text-slate-600">Emploi</span>
-                    <span className="text-amber-600 font-semibold">Priorité 2</span>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <span className="text-slate-600">Stage d'observation</span>
-                    <span className="text-orange-600 font-semibold">Priorité 3</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="mt-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
-              <p className="text-sm text-blue-800">
-                <strong>Pattern d'alternance :</strong> 3 Comité → 2 Externes → 2 ENSA → répéter
-              </p>
-            </div>
-          </div>
-        )}
 
         {/* Auto-refresh indicator */}
         {queues.length > 0 && (

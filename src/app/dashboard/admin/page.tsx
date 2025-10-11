@@ -636,33 +636,107 @@ function OverviewTabContent({
           <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-6">Santé du Système</h2>
           
           {stats && (
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-gray-700">Taux de réussite</span>
-                <span className="text-sm font-bold text-green-600">{stats.systemHealth.completionRate}%</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
-                  className="bg-green-500 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${stats.systemHealth.completionRate}%` }}
-                ></div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4 pt-4">
-                <div className="text-center">
-                  <p className="text-xl sm:text-2xl font-bold text-[#2880CA]">{stats.totalQueuesJoined}</p>
-                  <p className="text-xs sm:text-sm text-gray-600">Files d'attente</p>
+            <div className="space-y-6">
+              {/* System Status Indicators */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="text-center p-3 bg-green-50 rounded-lg border border-green-200">
+                  <div className="flex items-center justify-center mb-2">
+                    <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                    <span className="ml-2 text-sm font-medium text-green-800">Système</span>
+                  </div>
+                  <p className="text-xs text-green-600">Opérationnel</p>
                 </div>
-                <div className="text-center">
-                  <p className="text-xl sm:text-2xl font-bold text-[#2880CA]">{stats.totalCommitteeMembers}</p>
-                  <p className="text-xs sm:text-sm text-gray-600">Membres du comité</p>
+                <div className="text-center p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="flex items-center justify-center mb-2">
+                    <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                    <span className="ml-2 text-sm font-medium text-blue-800">Base de données</span>
+                  </div>
+                  <p className="text-xs text-blue-600">Connectée</p>
+                </div>
+                <div className="text-center p-3 bg-purple-50 rounded-lg border border-purple-200">
+                  <div className="flex items-center justify-center mb-2">
+                    <div className="w-3 h-3 bg-purple-500 rounded-full animate-pulse"></div>
+                    <span className="ml-2 text-sm font-medium text-purple-800">Temps réel</span>
+                  </div>
+                  <p className="text-xs text-purple-600">Actif</p>
                 </div>
               </div>
-              
-              <div className="pt-4 border-t">
-                <p className="text-sm text-gray-600">
-                  Durée moyenne d'entretien: <span className="font-semibold">{stats.averageDuration} min</span>
-                </p>
+
+              {/* System Information */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-gray-700 border-b border-gray-200 pb-2">Informations Système</h3>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="text-center p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <p className="text-lg font-bold text-blue-900">{stats.totalInterviewsToday}</p>
+                    <p className="text-xs text-blue-700">Entretiens aujourd'hui</p>
+                    <p className="text-xs text-blue-600 mt-1">
+                      {stats.systemHealth.completedInterviews} terminés
+                    </p>
+                  </div>
+                  
+                  <div className="text-center p-3 bg-green-50 rounded-lg border border-green-200">
+                    <p className="text-lg font-bold text-green-900">{stats.totalStudents}</p>
+                    <p className="text-xs text-green-700">Étudiants inscrits</p>
+                    <p className="text-xs text-green-600 mt-1">
+                      {stats.totalQueuesJoined} dans les files
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Activity Overview */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-gray-700 border-b border-gray-200 pb-2">Activité Actuelle</h3>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="text-center p-3 bg-orange-50 rounded-lg border border-orange-200">
+                    <p className="text-lg font-bold text-orange-900">{stats.activeInterviewsNow}</p>
+                    <p className="text-xs text-orange-700">Entretiens en cours</p>
+                    <p className="text-xs text-orange-600 mt-1">
+                      sur {stats.totalCompanies} entreprises
+                    </p>
+                  </div>
+                  
+                  <div className="text-center p-3 bg-purple-50 rounded-lg border border-purple-200">
+                    <p className="text-lg font-bold text-purple-900">{stats.totalCommitteeMembers}</p>
+                    <p className="text-xs text-purple-700">Membres du comité</p>
+                    <p className="text-xs text-purple-600 mt-1">
+                      Actifs aujourd'hui
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* System Status */}
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold text-gray-700 border-b border-gray-200 pb-2">Statut du Système</h3>
+                
+                <div className="space-y-2">
+                  <div className="flex items-center p-2 bg-green-50 rounded-lg border border-green-200">
+                    <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                    <p className="text-xs text-green-700">Forum opérationnel</p>
+                  </div>
+                  
+                  <div className="flex items-center p-2 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+                    <p className="text-xs text-blue-700">Mise à jour automatique active</p>
+                  </div>
+                  
+                  {stats.activeInterviewsNow > 0 && (
+                    <div className="flex items-center p-2 bg-orange-50 rounded-lg border border-orange-200">
+                      <div className="w-2 h-2 bg-orange-500 rounded-full mr-2"></div>
+                      <p className="text-xs text-orange-700">{stats.activeInterviewsNow} entretien{stats.activeInterviewsNow > 1 ? 's' : ''} en cours</p>
+                    </div>
+                  )}
+                  
+                  {stats.totalQueuesJoined > 0 && (
+                    <div className="flex items-center p-2 bg-purple-50 rounded-lg border border-purple-200">
+                      <div className="w-2 h-2 bg-purple-500 rounded-full mr-2"></div>
+                      <p className="text-xs text-purple-700">{stats.totalQueuesJoined} étudiant{stats.totalQueuesJoined > 1 ? 's' : ''} en attente</p>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}
