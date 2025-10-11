@@ -7,6 +7,8 @@ export interface ICompany extends Document {
   room: string;
   estimatedInterviewDuration: number;
   isActive: boolean;
+  isQueuePaused?: boolean; // Whether the queue is paused
+  isEmergencyMode?: boolean; // Whether the queue is in emergency mode
   imageId?: string; // GridFS file ID for company image
   imageUrl?: string; // Cached URL for the image
   createdAt: Date;
@@ -44,6 +46,14 @@ const companySchema = new mongoose.Schema<ICompany>({
   isActive: {
     type: Boolean,
     default: true,
+  },
+  isQueuePaused: {
+    type: Boolean,
+    default: false,
+  },
+  isEmergencyMode: {
+    type: Boolean,
+    default: false,
   },
   imageId: {
     type: String,

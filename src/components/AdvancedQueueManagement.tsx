@@ -21,6 +21,8 @@ interface QueueManagementData {
     name: string;
     room: string;
     estimatedDuration: number;
+    isQueuePaused?: boolean;
+    isEmergencyMode?: boolean;
   };
   currentInterview: {
     interviewId: string;
@@ -72,6 +74,7 @@ export default function AdvancedQueueManagement({ onQueueUpdate, compact = false
         throw new Error('Erreur lors du chargement des données de la file');
       }
       const data = await response.json();
+      console.log('Queue data fetched:', data.queueManagement.company); // Debug log
       setQueueData(data.queueManagement);
     } catch (error) {
       console.error('Error fetching queue data:', error);
@@ -107,7 +110,8 @@ export default function AdvancedQueueManagement({ onQueueUpdate, compact = false
       
       if (response.ok) {
         toast.success(data.message);
-        fetchQueueData();
+        // Force immediate refresh of queue data to get updated status
+        await fetchQueueData();
         onQueueUpdate?.();
         if (action === 'add_notes') {
           setShowNotes(null);
@@ -235,23 +239,28 @@ export default function AdvancedQueueManagement({ onQueueUpdate, compact = false
       {/* Queue Controls */}
       <div className="bg-white rounded-lg shadow-md p-6">
         <h3 className="text-lg font-bold text-gray-800 mb-4">Contrôles de File</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {/* Queue Status Toggle Button */}
           <button
-            onClick={() => handleQueueAction('pause_queue')}
-            disabled={actionLoading === 'pause_queue'}
-            className="flex items-center justify-center space-x-2 bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+            onClick={() => handleQueueAction(queueData.company.isQueuePaused ? 'resume_queue' : 'pause_queue')}
+            disabled={actionLoading === 'pause_queue' || actionLoading === 'resume_queue'}
+            className={`flex items-center justify-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 disabled:opacity-50 ${
+              queueData.company.isQueuePaused
+                ? 'bg-green-500 hover:bg-green-600 text-white shadow-lg transform hover:scale-105'
+                : 'bg-yellow-500 hover:bg-yellow-600 text-white shadow-lg transform hover:scale-105'
+            }`}
           >
-            <PauseIcon className="h-4 w-4" />
-            <span className="text-sm">Pause</span>
-          </button>
-          
-          <button
-            onClick={() => handleQueueAction('resume_queue')}
-            disabled={actionLoading === 'resume_queue'}
-            className="flex items-center justify-center space-x-2 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
-          >
-            <PlayIcon className="h-4 w-4" />
-            <span className="text-sm">Reprendre</span>
+            {queueData.company.isQueuePaused ? (
+              <>
+                <PlayIcon className="h-5 w-5" />
+                <span className="text-sm font-medium">Reprendre File</span>
+              </>
+            ) : (
+              <>
+                <PauseIcon className="h-5 w-5" />
+                <span className="text-sm font-medium">Pause File</span>
+              </>
+            )}
           </button>
           
           <button
@@ -260,7 +269,7 @@ export default function AdvancedQueueManagement({ onQueueUpdate, compact = false
             className="flex items-center justify-center space-x-2 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
           >
             <ExclamationTriangleIcon className="h-4 w-4" />
-            <span className="text-sm">Urgence</span>
+            <span className="text-sm">Mode Urgence</span>
           </button>
           
           <button
@@ -268,8 +277,37 @@ export default function AdvancedQueueManagement({ onQueueUpdate, compact = false
             disabled={actionLoading === 'clear_queue'}
             className="flex items-center justify-center space-x-2 bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
           >
-            <span className="text-sm">Vider</span>
+            <span className="text-sm">Vider File</span>
           </button>
+        </div>
+        
+        {/* Queue Status Indicator */}
+        <div className="mt-4 p-3 rounded-lg border">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <div className={`w-3 h-3 rounded-full ${
+                queueData.company.isQueuePaused 
+                  ? 'bg-yellow-500 animate-pulse' 
+                  : 'bg-green-500 animate-pulse'
+              }`}></div>
+              <span className="text-sm font-medium text-gray-700">
+                Statut de la File:
+              </span>
+              <span className={`text-sm font-bold ${
+                queueData.company.isQueuePaused 
+                  ? 'text-yellow-600' 
+                  : 'text-green-600'
+              }`}>
+                {queueData.company.isQueuePaused ? 'En Pause' : 'Active'}
+              </span>
+            </div>
+            {queueData.company.isEmergencyMode && (
+              <div className="flex items-center space-x-1 bg-red-100 text-red-800 px-2 py-1 rounded-full">
+                <ExclamationTriangleIcon className="h-3 w-3" />
+                <span className="text-xs font-medium">Mode Urgence</span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

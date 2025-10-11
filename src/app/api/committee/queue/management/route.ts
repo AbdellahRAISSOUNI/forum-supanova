@@ -106,13 +106,15 @@ export async function GET(request: NextRequest) {
       estimatedWaitTime: (index + 1) * company.estimatedInterviewDuration
     }));
 
-    return NextResponse.json({
+    const responseData = {
       queueManagement: {
         company: {
           _id: company._id.toString(),
           name: company.name,
           room: company.room,
-          estimatedDuration: company.estimatedInterviewDuration
+          estimatedDuration: company.estimatedInterviewDuration,
+          isQueuePaused: company.isQueuePaused || false,
+          isEmergencyMode: company.isEmergencyMode || false
         },
         currentInterview: currentInterview ? {
           interviewId: currentInterview._id.toString(),
@@ -133,7 +135,14 @@ export async function GET(request: NextRequest) {
           estimatedNextCall: formattedQueue.length > 0 ? formattedQueue[0].estimatedWaitTime : 0
         }
       }
-    }, { status: 200 });
+    };
+    
+    console.log('API Response - Company status:', {
+      isQueuePaused: responseData.queueManagement.company.isQueuePaused,
+      isEmergencyMode: responseData.queueManagement.company.isEmergencyMode
+    });
+    
+    return NextResponse.json(responseData, { status: 200 });
   } catch (error) {
     console.error('Error fetching queue management data:', error);
     return NextResponse.json({ error: 'Erreur interne du serveur' }, { status: 500 });
@@ -184,6 +193,18 @@ export async function POST(request: NextRequest) {
         break;
       case 'emergency_call':
         result = await emergencyCall(company._id.toString(), interviewId);
+        break;
+      case 'pause_queue':
+        result = await pauseQueue(company._id.toString());
+        break;
+      case 'resume_queue':
+        result = await resumeQueue(company._id.toString());
+        break;
+      case 'emergency_mode':
+        result = await emergencyMode(company._id.toString());
+        break;
+      case 'clear_queue':
+        result = await clearQueue(company._id.toString());
         break;
       default:
         return NextResponse.json({ error: 'Action non reconnue' }, { status: 400 });
@@ -322,6 +343,109 @@ async function emergencyCall(companyId: string, interviewId: string) {
       success: true, 
       message: 'Appel d\'urgence effectué avec succès',
       data: { emergencyStarted: true }
+    };
+  });
+}
+
+// Helper function to pause queue
+async function pauseQueue(companyId: string) {
+  return await withTransaction(async (session) => {
+    console.log('Pausing queue for company:', companyId);
+    
+    // Update company to mark queue as paused
+    const result = await Company.findByIdAndUpdate(
+      companyId,
+      { isQueuePaused: true },
+      { session, new: true }
+    );
+    
+    console.log('Company updated:', result?.isQueuePaused);
+
+    return { 
+      success: true, 
+      message: 'File d\'attente mise en pause avec succès',
+      data: { queuePaused: true }
+    };
+  });
+}
+
+// Helper function to resume queue
+async function resumeQueue(companyId: string) {
+  return await withTransaction(async (session) => {
+    console.log('Resuming queue for company:', companyId);
+    
+    // Update company to mark queue as active
+    const result = await Company.findByIdAndUpdate(
+      companyId,
+      { isQueuePaused: false },
+      { session, new: true }
+    );
+    
+    console.log('Company updated:', result?.isQueuePaused);
+
+    return { 
+      success: true, 
+      message: 'File d\'attente reprise avec succès',
+      data: { queueResumed: true }
+    };
+  });
+}
+
+// Helper function for emergency mode
+async function emergencyMode(companyId: string) {
+  return await withTransaction(async (session) => {
+    // End current interview if any
+    const currentInterview = await Interview.findOne({
+      companyId: new mongoose.Types.ObjectId(companyId),
+      status: 'in_progress'
+    }).session(session);
+
+    if (currentInterview) {
+      await Interview.findByIdAndUpdate(
+        currentInterview._id,
+        { 
+          status: 'passed',
+          passedAt: new Date()
+        },
+        { session }
+      );
+    }
+
+    // Set emergency mode flag
+    await Company.findByIdAndUpdate(
+      companyId,
+      { isEmergencyMode: true },
+      { session }
+    );
+
+    return { 
+      success: true, 
+      message: 'Mode d\'urgence activé avec succès',
+      data: { emergencyMode: true }
+    };
+  });
+}
+
+// Helper function to clear queue
+async function clearQueue(companyId: string) {
+  return await withTransaction(async (session) => {
+    // Cancel all waiting interviews
+    await Interview.updateMany(
+      {
+        companyId: new mongoose.Types.ObjectId(companyId),
+        status: 'waiting'
+      },
+      { 
+        status: 'cancelled',
+        cancelledAt: new Date()
+      },
+      { session }
+    );
+
+    return { 
+      success: true, 
+      message: 'File d\'attente vidée avec succès',
+      data: { queueCleared: true }
     };
   });
 }

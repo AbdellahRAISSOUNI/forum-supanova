@@ -11,7 +11,9 @@ import {
   ArrowLeftIcon,
   CheckCircleIcon,
   XCircleIcon,
-  ClockIcon
+  ClockIcon,
+  EyeIcon,
+  EyeSlashIcon
 } from '@heroicons/react/24/outline';
 
 interface CommitteeMember {
@@ -41,6 +43,7 @@ export default function AdminCommitteePage() {
   const [editingMember, setEditingMember] = useState<CommitteeMember | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [memberStatuses, setMemberStatuses] = useState<Record<string, { isActive: boolean; lastActivity?: string }>>({});
+  const [showPassword, setShowPassword] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -144,6 +147,7 @@ export default function AdminCommitteePage() {
   const closeModal = () => {
     setIsModalOpen(false);
     setEditingMember(null);
+    setShowPassword(false);
     setFormData({
       firstName: '',
       name: '',
@@ -458,7 +462,8 @@ export default function AdminCommitteePage() {
                     id="firstName"
                     value={formData.firstName}
                     onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#2880CA] text-gray-900 placeholder-gray-500"
+                    placeholder="Entrez le prénom"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#2880CA] text-gray-900 placeholder-gray-600 bg-white"
                     required
                   />
                 </div>
@@ -472,7 +477,8 @@ export default function AdminCommitteePage() {
                     id="name"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#2880CA] text-gray-900 placeholder-gray-500"
+                    placeholder="Entrez le nom de famille"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#2880CA] text-gray-900 placeholder-gray-600 bg-white"
                     required
                   />
                 </div>
@@ -486,7 +492,8 @@ export default function AdminCommitteePage() {
                     id="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#2880CA] text-gray-900 placeholder-gray-500"
+                    placeholder="exemple@email.com"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#2880CA] text-gray-900 placeholder-gray-600 bg-white"
                     required
                   />
                 </div>
@@ -496,15 +503,29 @@ export default function AdminCommitteePage() {
                     <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
                       Mot de passe *
                     </label>
-                    <input
-                      type="password"
-                      id="password"
-                      value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#2880CA] text-gray-900 placeholder-gray-500"
-                      required
-                      minLength={6}
-                    />
+                    <div className="relative">
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        id="password"
+                        value={formData.password}
+                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                        placeholder="Minimum 6 caractères"
+                        className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#2880CA] text-gray-900 placeholder-gray-600 bg-white"
+                        required
+                        minLength={6}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                      >
+                        {showPassword ? (
+                          <EyeSlashIcon className="h-4 w-4 text-gray-600 hover:text-gray-800" />
+                        ) : (
+                          <EyeIcon className="h-4 w-4 text-gray-600 hover:text-gray-800" />
+                        )}
+                      </button>
+                    </div>
                   </div>
                 )}
 
@@ -516,12 +537,12 @@ export default function AdminCommitteePage() {
                     id="assignedRoom"
                     value={formData.assignedRoom}
                     onChange={(e) => setFormData({ ...formData, assignedRoom: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#2880CA] text-gray-900"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#2880CA] text-gray-900 bg-white"
                     required
                   >
-                    <option value="">Sélectionner une salle</option>
+                    <option value="" className="text-gray-900 bg-white">Sélectionner une salle</option>
                     {rooms.map((room) => (
-                      <option key={room.room} value={room.room}>
+                      <option key={room.room} value={room.room} className="text-gray-900 bg-white">
                         {room.room} ({room.companies})
                       </option>
                     ))}
@@ -549,15 +570,6 @@ export default function AdminCommitteePage() {
           </div>
         </div>
       )}
-
-      {/* Footer */}
-      <footer className="bg-gray-800/90 backdrop-blur-sm text-white py-6 px-4 sm:px-6 lg:px-8 mt-12">
-        <div className="max-w-7xl mx-auto text-center">
-          <p className="text-gray-300">
-            © 2025 ENSA Tétouan - Forum des Entreprises. Espace Administrateur.
-          </p>
-        </div>
-      </footer>
     </div>
   );
 }

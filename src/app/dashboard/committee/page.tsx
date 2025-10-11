@@ -637,15 +637,6 @@ export default function CommitteeDashboard() {
           />
         )}
       </main>
-
-      {/* Footer */}
-      <footer className="bg-gray-800/90 backdrop-blur-sm text-white py-6 px-4 sm:px-6 lg:px-8 mt-12">
-        <div className="max-w-7xl mx-auto text-center">
-          <p className="text-gray-300">
-            © 2025 ENSA Tétouan - Forum des Entreprises. Espace Comité.
-          </p>
-        </div>
-      </footer>
     </div>
   );
 }
