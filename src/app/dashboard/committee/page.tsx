@@ -817,9 +817,6 @@ function QueueManagementContent({
             <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
                 <h2 className="text-2xl font-bold text-gray-800">File d'Attente</h2>
           </div>
-          <div className="text-sm text-gray-600 bg-blue-50/70 backdrop-blur-sm px-4 py-2 rounded-xl border border-blue-200/50">
-                  <span className="font-medium">Système intelligent :</span> 3 Comité → 2 Externes → 2 ENSA
-                </div>
               </div>
               
               {queueData.waitingQueue.length === 0 ? (

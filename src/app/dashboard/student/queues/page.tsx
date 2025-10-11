@@ -93,21 +93,48 @@ export default function StudentQueuesPage() {
       return;
     }
 
-    // Find the highest priority queue for banner display
-    const priorityQueue = queues.find((queue: Queue) => 
+    // Find all eligible queues (position <= 3 and waiting)
+    const eligibleQueues = queues.filter((queue: Queue) =>
       queue.status === 'waiting' && queue.position <= 3
     );
 
-    if (priorityQueue) {
-      const newBanner = { 
-        queueId: priorityQueue._id, 
-        position: priorityQueue.position, 
-        room: priorityQueue.room 
-      };
-      setShowPositionBanner(newBanner);
-    } else {
+    if (eligibleQueues.length === 0) {
       setShowPositionBanner(null);
+      return;
     }
+
+    // Priority system for determining which queue to show banner for:
+    // 1. Position 1 queues have highest priority (but constraint prevents multiple position 1)
+    // 2. Among same position, prioritize by priorityScore (lower is better)
+    // 3. If tie, prioritize by join time (earlier join = higher priority)
+
+    const sortedQueues = eligibleQueues.sort((a: Queue, b: Queue) => {
+      // Position 1 has absolute priority
+      if (a.position === 1 && b.position !== 1) return -1;
+      if (a.position !== 1 && b.position === 1) return 1;
+
+      // For same positions, prioritize by priority score (lower is better)
+      if (a.position === b.position) {
+        if (a.priorityScore !== b.priorityScore) {
+          return a.priorityScore - b.priorityScore;
+        }
+        // If priority scores are equal, prioritize by join time (earlier = better)
+        return new Date(a.joinedAt).getTime() - new Date(b.joinedAt).getTime();
+      }
+
+      // Lower position number = higher priority
+      return a.position - b.position;
+    });
+
+    // Show banner for the highest priority queue
+    const bestQueue = sortedQueues[0];
+    const newBanner = {
+      queueId: bestQueue._id,
+      position: bestQueue.position,
+      room: bestQueue.room
+    };
+
+    setShowPositionBanner(newBanner);
   }, [queues]);
 
   const handleLeaveQueue = async (queueId: string) => {

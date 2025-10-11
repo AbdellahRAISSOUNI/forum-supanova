@@ -88,6 +88,9 @@ interviewSchema.index({ studentId: 1, companyId: 1, status: 1 }, { unique: true,
 // Index to ensure only one interview per company is in progress
 interviewSchema.index({ companyId: 1, status: 1 }, { unique: true, partialFilterExpression: { status: 'in_progress' } });
 
+// Index to prevent student from being in position 1 in multiple companies simultaneously
+interviewSchema.index({ studentId: 1, queuePosition: 1, status: 'waiting' }, { unique: true, partialFilterExpression: { queuePosition: 1, status: 'waiting' } });
+
 // Index for efficient queue position updates
 interviewSchema.index({ companyId: 1, status: 1, queuePosition: 1, priorityScore: 1, joinedAt: 1 });
 

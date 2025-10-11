@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { checkAndFixDatabaseConsistency, validateQueueIntegrity } from '@/lib/utils/databaseConsistency';
+import { resolveAllPosition1Conflicts } from '@/lib/services/atomicQueueService';
 import { z } from 'zod';
 
 const consistencyCheckSchema = z.object({
@@ -88,12 +89,17 @@ export async function POST(request: NextRequest) {
       });
     } else {
       // Fix all consistency issues
-      const result = await checkAndFixDatabaseConsistency();
+      const consistencyResult = await checkAndFixDatabaseConsistency();
+
+      // Also resolve position 1 conflicts
+      const position1Result = await resolveAllPosition1Conflicts();
+
       return NextResponse.json({
         message: 'Correction terminée',
-        isValid: result.isValid,
-        issues: result.issues,
-        fixed: result.fixed
+        isValid: consistencyResult.isValid,
+        issues: [...consistencyResult.issues, ...position1Result.errors],
+        fixed: consistencyResult.fixed + position1Result.resolved,
+        position1ConflictsResolved: position1Result.resolved
       });
     }
   } catch (error) {

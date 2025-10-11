@@ -361,11 +361,6 @@ export default function StudentHistoryPage() {
                         </p>
                       </div>
                     )}
-                    <div className="bg-slate-50 px-4 py-3 rounded-xl">
-                      <p className="text-slate-600">
-                        <strong className="text-slate-900">Score de priorité:</strong> {interview.priorityScore}
-                      </p>
-                    </div>
                   </div>
                 </div>
               </div>

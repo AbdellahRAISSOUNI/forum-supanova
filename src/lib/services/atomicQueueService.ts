@@ -41,7 +41,7 @@ export interface JoinQueueResult {
  * Calculate priority score for a user based on their role and opportunity type
  * Lower score = higher priority
  */
-export function calculatePriorityScore(user: any, opportunityType: string): number {
+export function calculatePriorityScore(user: any, opportunityType: string, companyId?: string): number {
   let baseScore = 0;
 
   // Base score by role - only students can join queues
@@ -59,20 +59,112 @@ export function calculatePriorityScore(user: any, opportunityType: string): numb
   // Add opportunity type modifier
   switch (opportunityType) {
     case 'pfa':
+      baseScore += 0; // Highest priority for PFA
+      break;
     case 'pfe':
-      baseScore += 0; // No modifier for academic projects
+      baseScore += 5; // High priority for PFE
       break;
     case 'employment':
       baseScore += 10;
       break;
     case 'observation':
-      baseScore += 20;
+      baseScore += 20; // Lower priority for observation
       break;
     default:
       baseScore += 30; // Unknown type gets lowest priority
   }
 
   return baseScore;
+}
+
+/**
+ * Resolve position 1 conflicts for all students in the system
+ * This function ensures no student has position 1 in multiple companies
+ */
+export async function resolveAllPosition1Conflicts(): Promise<{ resolved: number; errors: string[] }> {
+  try {
+    await connectDB();
+
+    // Find all students who have position 1 in multiple companies
+    const studentsWithConflicts = await Interview.aggregate([
+      {
+        $match: {
+          status: 'waiting',
+          queuePosition: 1
+        }
+      },
+      {
+        $group: {
+          _id: '$studentId',
+          count: { $sum: 1 },
+          interviews: { $push: '$$ROOT' }
+        }
+      },
+      {
+        $match: { count: { $gt: 1 } }
+      }
+    ]);
+
+    let resolved = 0;
+    const errors: string[] = [];
+
+    for (const studentGroup of studentsWithConflicts) {
+      try {
+        await resolvePosition1Conflicts(studentGroup._id.toString());
+        resolved++;
+      } catch (error) {
+        errors.push(`Failed to resolve conflicts for student ${studentGroup._id}: ${error}`);
+      }
+    }
+
+    return { resolved, errors };
+  } catch (error) {
+    console.error('Error resolving all position 1 conflicts:', error);
+    throw error;
+  }
+}
+
+/**
+ * Resolve position 1 conflicts when student has multiple position 1 queues
+ * This function ensures only one company has the student at position 1
+ */
+export async function resolvePosition1Conflicts(studentId: string): Promise<void> {
+  try {
+    await connectDB();
+
+    // Find all position 1 interviews for this student
+    const position1Interviews = await Interview.find({
+      studentId: new mongoose.Types.ObjectId(studentId),
+      status: 'waiting',
+      queuePosition: 1
+    }).sort({ priorityScore: 1, joinedAt: 1 }); // Sort by priority, then join time
+
+    if (position1Interviews.length <= 1) {
+      return; // No conflicts to resolve
+    }
+
+    // Keep only the highest priority position 1, move others to position 2
+    const [keepInterview, ...conflictInterviews] = position1Interviews;
+
+    console.log(`Resolving position 1 conflicts for student ${studentId}. Keeping: ${keepInterview.companyId}, moving: ${conflictInterviews.length} others`);
+
+    // Move conflicting interviews to position 2 in their respective companies
+    for (const interview of conflictInterviews) {
+      await withTransaction(async (session) => {
+        // Update this interview to position 2
+        await Interview.findByIdAndUpdate(interview._id, {
+          queuePosition: 2
+        }, { session });
+
+        // Update positions in the company queue
+        await atomicUpdateQueuePosition(interview.companyId.toString(), session);
+      });
+    }
+
+  } catch (error) {
+    console.error('Error resolving position 1 conflicts:', error);
+    throw error;
+  }
 }
 
 /**
@@ -172,7 +264,7 @@ async function atomicUpdateQueuePosition(
     .session(session);
 
     // Update positions atomically
-    const updatePromises = waitingInterviews.map((interview, index) => 
+    const updatePromises = waitingInterviews.map((interview, index) =>
       Interview.findByIdAndUpdate(
         interview._id,
         { queuePosition: index + 1 },
@@ -181,6 +273,18 @@ async function atomicUpdateQueuePosition(
     );
 
     await Promise.all(updatePromises);
+
+    // Check for position 1 conflicts across all companies for affected students
+    const affectedStudentIds = [...new Set(waitingInterviews.map(i => i.studentId.toString()))];
+
+    // Resolve conflicts for all affected students
+    for (const studentId of affectedStudentIds) {
+      try {
+        await resolvePosition1Conflicts(studentId);
+      } catch (error) {
+        console.warn(`Failed to resolve position 1 conflicts for student ${studentId}:`, error);
+      }
+    }
 
     return { success: true, position: waitingInterviews.length };
   } catch (error) {
