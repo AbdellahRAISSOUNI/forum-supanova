@@ -222,3 +222,42 @@ body {
   transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(40, 128, 202, 0.3);
 }
+
+/* Input text styles */
+input[type="text"], 
+input[type="email"], 
+input[type="password"], 
+input[type="number"], 
+input[type="tel"], 
+input[type="url"], 
+textarea {
+  color: #111827 !important;
+  font-weight: 500;
+}
+
+/* Placeholder styles */
+::placeholder {
+  color: #6b7280 !important;
+  opacity: 1 !important;
+  font-weight: 400;
+}
+
+::-webkit-input-placeholder {
+  color: #6b7280 !important;
+  opacity: 1 !important;
+}
+
+::-moz-placeholder {
+  color: #6b7280 !important;
+  opacity: 1 !important;
+}
+
+:-ms-input-placeholder {
+  color: #6b7280 !important;
+  opacity: 1 !important;
+}
+
+:-moz-placeholder {
+  color: #6b7280 !important;
+  opacity: 1 !important;
+}

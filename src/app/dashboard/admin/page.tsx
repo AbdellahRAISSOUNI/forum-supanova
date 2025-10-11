@@ -95,7 +95,7 @@ export default function AdminDashboard() {
   const router = useRouter();
   const [selectedQueue, setSelectedQueue] = useState<QueueOverview | null>(null);
   const [showQueueModal, setShowQueueModal] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'companies' | 'committee' | 'system'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'companies' | 'committee' | 'system' | 'users'>('overview');
 
   // Fetch admin statistics
   const { data: stats, isLoading: statsLoading } = useQuery({
@@ -309,6 +309,20 @@ export default function AdminDashboard() {
                 <span className="sm:hidden">Sys.</span>
               </div>
             </button>
+            <button
+              onClick={() => setActiveTab('users')}
+              className={`flex-1 min-w-0 px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
+                activeTab === 'users'
+                  ? 'bg-[#2880CA] text-white'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              <div className="flex items-center justify-center space-x-1 sm:space-x-2">
+                <UserGroupIcon className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                <span className="hidden sm:inline">Utilisateurs</span>
+                <span className="sm:hidden">Users</span>
+              </div>
+            </button>
           </div>
         </div>
       </div>
@@ -347,6 +361,10 @@ export default function AdminDashboard() {
             queuesLoading={queuesLoading}
           />
         )}
+
+        {activeTab === 'users' && (
+          <UsersTabContent />
+        )}
       </main>
 
       {/* Full Queue Modal */}
@@ -369,7 +387,7 @@ export default function AdminDashboard() {
               </div>
               <button
                 onClick={() => setShowQueueModal(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-full hover:bg-gray-100/50"
+                className="text-gray-600 hover:text-gray-800 transition-colors p-2 rounded-full hover:bg-gray-100/50"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -429,10 +447,10 @@ export default function AdminDashboard() {
                 {selectedQueue.fullQueue.length === 0 ? (
                   <div className="text-center py-12">
                     <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <UserGroupIcon className="w-8 h-8 text-gray-400" />
+                      <UserGroupIcon className="w-8 h-8 text-gray-600" />
                     </div>
                     <p className="text-gray-600 text-lg">Aucun étudiant en attente</p>
-                    <p className="text-gray-500 text-sm mt-1">La file d'attente est vide</p>
+                    <p className="text-gray-700 text-sm mt-1">La file d'attente est vide</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -454,7 +472,7 @@ export default function AdminDashboard() {
                           <p className="text-sm text-gray-600 font-medium">
                             Arrivé: {formatDate(student.joinedAt)}
                           </p>
-                          <p className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full mt-1">
+                          <p className="text-xs text-gray-700 bg-gray-100 px-2 py-1 rounded-full mt-1">
                             Score: {student.priorityScore}
                           </p>
                         </div>
@@ -477,14 +495,6 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* Footer */}
-      <footer className="bg-gray-800/90 backdrop-blur-sm text-white py-6 px-4 sm:px-6 lg:px-8 mt-12">
-        <div className="max-w-7xl mx-auto text-center">
-          <p className="text-gray-300">
-            © 2025 ENSA Tétouan - Forum des Entreprises. Espace Administrateur.
-          </p>
-        </div>
-      </footer>
     </div>
   );
 }
@@ -608,9 +618,9 @@ function OverviewTabContent({
                     <p className="text-sm text-gray-600">{activity.description}</p>
                     <div className="flex items-center space-x-2 mt-1">
                       {activity.companyName && (
-                        <span className="text-xs text-gray-500">Salle {activity.room}</span>
+                        <span className="text-xs text-gray-700">Salle {activity.room}</span>
                       )}
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-gray-700">
                         {formatDate(activity.timestamp)}
                       </span>
                     </div>
@@ -689,7 +699,7 @@ function OverviewTabContent({
                   </div>
                   <div className="text-right">
                     <p className="text-xs sm:text-sm font-medium text-gray-700">{queue.totalWaiting} en attente</p>
-                    <p className="text-xs text-gray-500">{queue.averageWaitTime} min d'attente</p>
+                    <p className="text-xs text-gray-700">{queue.averageWaitTime} min d'attente</p>
                   </div>
                 </div>
 
@@ -791,21 +801,27 @@ function SystemTabContent({ queues, queuesLoading }: any) {
         </div>
       </div>
 
-      {/* System Actions */}
-      <div className="bg-white/70 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 p-4 sm:p-6">
-        <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-4">Actions Système</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <button className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-3 rounded-lg transition-colors text-center">
-            <CogIcon className="w-5 h-5 mx-auto mb-2" />
-            Gestion Utilisateurs
-          </button>
-          <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg transition-colors text-center">
-            <ChartBarIcon className="w-5 h-5 mx-auto mb-2" />
-            Statistiques Avancées
-          </button>
-          <button className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-3 rounded-lg transition-colors text-center">
-            <ExclamationTriangleIcon className="w-5 h-5 mx-auto mb-2" />
-            Maintenance
+    </div>
+  );
+}
+
+// Users Tab Component
+function UsersTabContent() {
+  const router = useRouter();
+  
+  return (
+    <div className="space-y-6">
+      <div className="bg-white/70 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 p-6 sm:p-8">
+        <div className="text-center">
+          <UserGroupIcon className="w-16 h-16 text-[#2880CA] mx-auto mb-4" />
+          <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 mb-2">User Management</h2>
+          <p className="text-gray-600 mb-6">Manage system users, roles, and permissions</p>
+          <button
+            onClick={() => router.push('/dashboard/admin/users')}
+            className="inline-flex items-center px-6 py-3 bg-[#2880CA] hover:bg-[#1e5f8a] text-white font-semibold rounded-lg transition-colors"
+          >
+            <UserGroupIcon className="w-5 h-5 mr-2" />
+            Access User Management
           </button>
         </div>
       </div>
