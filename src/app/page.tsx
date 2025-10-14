@@ -54,21 +54,21 @@ const CountdownTimer = () => {
       <div className="absolute -top-10 -right-10 w-32 h-32 bg-gradient-to-br from-[#2880CA]/20 to-transparent rounded-full blur-xl"></div>
       <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-gradient-to-br from-[#1e5f8a]/20 to-transparent rounded-full blur-xl"></div>
       
-      <div className="relative bg-white/90 backdrop-blur-xl rounded-3xl p-8 md:p-12 shadow-2xl border border-white/20">
+      <div className="relative bg-white/90 backdrop-blur-xl rounded-2xl md:rounded-3xl p-6 md:p-8 lg:p-12 shadow-2xl border border-white/20">
         <motion.div
           initial={{ scale: 0.9 }}
           animate={{ scale: 1 }}
           transition={{ duration: 0.8, delay: 0.7 }}
-          className="text-center mb-8"
+          className="text-center mb-6 md:mb-8"
         >
-          <h3 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-[#2880CA] to-[#1e5f8a] bg-clip-text text-transparent mb-4">
+          <h3 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-[#2880CA] to-[#1e5f8a] bg-clip-text text-transparent mb-3 md:mb-4 px-2">
             Forum des Entreprises ENSA Tétouan
           </h3>
-          <p className="text-lg text-gray-600 mb-2">15-16 Octobre 2025</p>
+          <p className="text-base md:text-lg text-gray-600 mb-2">15-16 Octobre 2025</p>
           <p className="text-sm text-gray-500">Cérémonie d'ouverture à 09h30</p>
         </motion.div>
         
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 lg:gap-6">
           {timeUnits.map((unit, index) => (
             <motion.div
               key={unit.label}
@@ -78,15 +78,15 @@ const CountdownTimer = () => {
               whileHover={{ scale: 1.05, rotateY: 5 }}
               className="relative group"
             >
-              <div className="bg-gradient-to-br from-[#2880CA] to-[#1e5f8a] rounded-2xl p-4 md:p-6 text-center shadow-lg group-hover:shadow-xl transition-all duration-300">
-                <div className="text-2xl md:text-4xl font-bold text-white mb-2">
+              <div className="bg-gradient-to-br from-[#2880CA] to-[#1e5f8a] rounded-xl md:rounded-2xl p-3 md:p-4 lg:p-6 text-center shadow-lg group-hover:shadow-xl transition-all duration-300">
+                <div className="text-lg sm:text-xl md:text-2xl lg:text-4xl font-bold text-white mb-1 md:mb-2">
                   {unit.value.toString().padStart(2, '0')}
                 </div>
                 <div className="text-blue-100 text-xs md:text-sm font-medium">
                   {unit.label}
                 </div>
               </div>
-              <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-xl md:rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             </motion.div>
           ))}
         </div>
@@ -95,8 +95,8 @@ const CountdownTimer = () => {
   );
 };
 
-// Enhanced Company Card
-const CompanyCard = ({ name, sector, website, index }: { name: string; sector: string; website: string; index: number }) => (
+// Enhanced Company Card with Logo
+const CompanyCard = ({ name, sector, website, logoPath, index }: { name: string; sector: string; website: string; logoPath?: string; index: number }) => (
   <motion.div
     initial={{ opacity: 0, y: 30, rotateX: -15 }}
     animate={{ opacity: 1, y: 0, rotateX: 0 }}
@@ -105,23 +105,40 @@ const CompanyCard = ({ name, sector, website, index }: { name: string; sector: s
     className="group relative"
   >
     <div className="absolute inset-0 bg-gradient-to-br from-[#2880CA]/5 to-[#1e5f8a]/5 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-300"></div>
-    <div className="relative bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 border border-white/20 group-hover:border-[#2880CA]/30">
+    <div className="relative bg-white/90 backdrop-blur-sm rounded-2xl p-4 md:p-6 shadow-lg hover:shadow-2xl transition-all duration-300 border border-white/20 group-hover:border-[#2880CA]/30">
       <div className="flex items-center justify-between mb-4">
-        <div className="w-12 h-12 bg-gradient-to-br from-[#2880CA] to-[#1e5f8a] rounded-xl flex items-center justify-center">
-          <span className="text-white font-bold text-lg">{name.charAt(0)}</span>
+        <div className="w-12 h-12 md:w-16 md:h-16 bg-white rounded-xl flex items-center justify-center shadow-md overflow-hidden">
+          {logoPath ? (
+            <img 
+              src={logoPath} 
+              alt={`${name} logo`}
+              className="w-full h-full object-contain p-1"
+              onError={(e) => {
+                // Fallback to initial letter if image fails to load
+                e.currentTarget.style.display = 'none';
+                const nextElement = e.currentTarget.nextElementSibling as HTMLElement;
+                if (nextElement) {
+                  nextElement.style.display = 'flex';
+                }
+              }}
+            />
+          ) : null}
+          <div className={`w-full h-full bg-gradient-to-br from-[#2880CA] to-[#1e5f8a] rounded-xl flex items-center justify-center ${logoPath ? 'hidden' : ''}`}>
+            <span className="text-white font-bold text-lg md:text-xl">{name.charAt(0)}</span>
+          </div>
         </div>
         <div className="w-2 h-2 bg-gradient-to-r from-[#2880CA] to-[#1e5f8a] rounded-full group-hover:scale-150 transition-transform duration-300"></div>
       </div>
-      <h4 className="text-lg font-bold text-gray-800 mb-2 group-hover:text-[#2880CA] transition-colors">{name}</h4>
-      <p className="text-gray-600 mb-4 text-sm">{sector}</p>
+      <h4 className="text-base md:text-lg font-bold text-gray-800 mb-2 group-hover:text-[#2880CA] transition-colors line-clamp-2">{name}</h4>
+      <p className="text-gray-600 mb-4 text-xs md:text-sm line-clamp-2">{sector}</p>
       <a 
         href={website} 
         target="_blank" 
         rel="noopener noreferrer"
-        className="inline-flex items-center text-[#2880CA] hover:text-[#1e5f8a] font-medium text-sm transition-all duration-300 group-hover:translate-x-1"
+        className="inline-flex items-center text-[#2880CA] hover:text-[#1e5f8a] font-medium text-xs md:text-sm transition-all duration-300 group-hover:translate-x-1"
       >
         Visiter le site
-        <svg className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-3 h-3 md:w-4 md:h-4 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
         </svg>
       </a>
@@ -129,8 +146,8 @@ const CompanyCard = ({ name, sector, website, index }: { name: string; sector: s
   </motion.div>
 );
 
-// Enhanced Sponsor Card
-const SponsorCard = ({ name, category, index }: { name: string; category: string; index: number }) => {
+// Enhanced Sponsor Card with Logo
+const SponsorCard = ({ name, category, logoPath, index }: { name: string; category: string; logoPath?: string; index: number }) => {
   const getCategoryStyle = (category: string) => {
     switch (category) {
       case 'Officiel': return {
@@ -172,16 +189,32 @@ const SponsorCard = ({ name, category, index }: { name: string; category: string
       className="group relative"
     >
       <div className={`absolute inset-0 bg-gradient-to-br ${style.gradient} rounded-2xl blur-xl opacity-20 group-hover:opacity-30 transition-opacity duration-300`}></div>
-      <div className="relative bg-white/95 backdrop-blur-sm rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 border border-white/20 group-hover:border-white/40">
+      <div className="relative bg-white/95 backdrop-blur-sm rounded-2xl p-4 md:p-6 shadow-lg hover:shadow-2xl transition-all duration-300 border border-white/20 group-hover:border-white/40">
         <div className="flex items-center justify-between mb-4">
-          <div className={`w-12 h-12 bg-gradient-to-br ${style.gradient} rounded-xl flex items-center justify-center shadow-lg`}>
-            <span className="text-white font-bold text-lg">{name.charAt(0)}</span>
+          <div className="w-12 h-12 md:w-16 md:h-16 bg-white rounded-xl flex items-center justify-center shadow-md overflow-hidden">
+            {logoPath ? (
+              <img 
+                src={logoPath} 
+                alt={`${name} logo`}
+                className="w-full h-full object-contain p-1"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  const nextElement = e.currentTarget.nextElementSibling as HTMLElement;
+                  if (nextElement) {
+                    nextElement.style.display = 'flex';
+                  }
+                }}
+              />
+            ) : null}
+            <div className={`w-full h-full bg-gradient-to-br ${style.gradient} rounded-xl flex items-center justify-center shadow-lg ${logoPath ? 'hidden' : ''}`}>
+              <span className="text-white font-bold text-lg md:text-xl">{name.charAt(0)}</span>
+            </div>
           </div>
-          <div className={`px-3 py-1 bg-gradient-to-r ${style.gradient} text-white rounded-full text-xs font-bold shadow-lg`}>
+          <div className={`px-2 md:px-3 py-1 bg-gradient-to-r ${style.gradient} text-white rounded-full text-xs font-bold shadow-lg`}>
             {category}
           </div>
         </div>
-        <h4 className="text-lg font-bold text-gray-800 group-hover:text-[#2880CA] transition-colors">{name}</h4>
+        <h4 className="text-base md:text-lg font-bold text-gray-800 group-hover:text-[#2880CA] transition-colors line-clamp-2">{name}</h4>
         <div className="mt-4 h-1 bg-gradient-to-r from-gray-200 to-gray-300 rounded-full overflow-hidden">
           <motion.div
             initial={{ width: 0 }}
@@ -197,34 +230,33 @@ const SponsorCard = ({ name, category, index }: { name: string; category: string
 
 export default function Home() {
   const companies = [
-    { name: "Capgemini", sector: "Services IT & Consulting", website: "https://www.capgemini.com" },
-    { name: "Hiberus", sector: "Développement Logiciel", website: "https://www.hiberus.com" },
-    { name: "APT", sector: "Technologies Avancées", website: "https://www.apt.com" },
-    { name: "MK4", sector: "Solutions Digitales", website: "https://www.mk4.com" },
-    { name: "XAI", sector: "Intelligence Artificielle", website: "https://www.xai.com" },
-    { name: "IRESEN", sector: "Énergies Renouvelables", website: "https://www.iresen.org" },
-    { name: "VISEO", sector: "Transformation Digitale", website: "https://www.viseo.com" },
-    { name: "Renault", sector: "Automobile", website: "https://www.renault.com" },
-    { name: "Cloud Marketing Hub", sector: "Marketing Digital", website: "https://www.cloudmarketinghub.com" },
-    { name: "AZ TMA", sector: "Maintenance Industrielle", website: "https://www.aztma.com" },
-    { name: "Segula Technologies", sector: "Ingénierie", website: "https://www.segula.com" },
-    { name: "APM Terminals", sector: "Logistique Portuaire", website: "https://www.apmterminals.com" },
-    { name: "Stellantis", sector: "Automobile", website: "https://www.stellantis.com" },
-    { name: "Babel Group", sector: "Conseil & Services", website: "https://www.babelgroup.com" },
-    { name: "Expleo", sector: "Ingénierie & Innovation", website: "https://www.expleo.com" },
-    { name: "Anapec", sector: "Emploi & Formation", website: "https://www.anapec.org" },
-    { name: "Alten", sector: "Ingénierie & Conseil", website: "https://www.alten.com" },
-    { name: "NTT Data", sector: "Services IT", website: "https://www.nttdata.com" }
+    { name: "Hiberus", sector: "Développement Logiciel", website: "https://www.hiberus.com", logoPath: "/logos/hiberus azul.jpg" },
+    { name: "IRESEN", sector: "Énergies Renouvelables", website: "https://www.iresen.org", logoPath: "/logos/iresen.png" },
+    { name: "VISEO MAROC", sector: "Transformation Digitale", website: "https://www.viseo.com", logoPath: "/logos/LOGO VISEO MAROC PNG.png" },
+    { name: "Renault Group", sector: "Automobile", website: "https://www.renault.com", logoPath: "/logos/RG_RENAULT_GROUP-Logo.jpg" },
+    { name: "Cloud Marketing Hub", sector: "Marketing Digital", website: "https://www.cloudmarketinghub.com", logoPath: "/logos/logo cloud marketing hub.png" },
+    { name: "AZ TMA", sector: "Maintenance Industrielle", website: "https://www.aztma.com", logoPath: "/logos/Logo-AZ-TMA-HD-PNG-2048x735.png" },
+    { name: "SEGULA Technologies", sector: "Ingénierie", website: "https://www.segula.com", logoPath: "/logos/SEGULA_Technologies_logo.png" },
+    { name: "APM Terminals", sector: "Logistique Portuaire", website: "https://www.apmterminals.com", logoPath: "/logos/APM terminals.png" },
+    { name: "Stellantis", sector: "Automobile", website: "https://www.stellantis.com", logoPath: "/logos/stellantis.png" },
+    { name: "Babel Group", sector: "Conseil & Services", website: "https://www.babelgroup.com", logoPath: "/logos/babel.png" },
+    { name: "Expleo Group", sector: "Ingénierie & Innovation", website: "https://www.expleo.com", logoPath: "/logos/png-transparent-expleo-group-hd-logo.png" },
+    { name: "ADE", sector: "Emploi & Formation", website: "https://www.anapec.org", logoPath: "/logos/LOGO ADE (1).png" },
+    { name: "ALTEN", sector: "Ingénierie & Conseil", website: "https://www.alten.com", logoPath: "/logos/ALTEN_BLACK.png" },
+    { name: "NTT Data", sector: "Services IT", website: "https://www.nttdata.com", logoPath: "/logos/GlobalLogo_NTTDATA_Color.png" },
+    { name: "ISIC", sector: "Institut Supérieur", website: "https://www.isic.ma", logoPath: "/logos/ISIC_logo_COLOUR_rgb.png" },
+    { name: "CYPE", sector: "Logiciels BTP", website: "https://www.cype.com", logoPath: "/logos/cype.png" },
+    { name: "JTEKT", sector: "Technologies Automobile", website: "https://www.jtekt.com", logoPath: "/logos/jtekt.png" },
+    { name: "Serdilab", sector: "Laboratoire", website: "https://www.serdilab.com", logoPath: "/logos/serdilab.png" }
   ];
 
   const sponsors = [
-    { name: "CIH Bank", category: "Officiel" },
-    { name: "Alten", category: "Gold" },
-    { name: "Viseo", category: "Silver" },
-    { name: "Iresen", category: "Silver" },
-    { name: "NTT Data", category: "Silver" },
-    { name: "ISIC", category: "Silver" },
-    { name: "Linx", category: "Silver" }
+    { name: "CIH Bank", category: "Officiel", logoPath: "/logos/LOGO CIH-black.png" },
+    { name: "ALTEN", category: "Gold", logoPath: "/logos/ALTEN_BLACK.png" },
+    { name: "VISEO MAROC", category: "Silver", logoPath: "/logos/LOGO VISEO MAROC PNG.png" },
+    { name: "IRESEN", category: "Silver", logoPath: "/logos/iresen.png" },
+    { name: "NTT Data", category: "Silver", logoPath: "/logos/GlobalLogo_NTTDATA_Color.png" },
+    { name: "ISIC", category: "Silver", logoPath: "/logos/ISIC_logo_COLOUR_rgb.png" }
   ];
 
   return (
@@ -263,93 +295,262 @@ export default function Home() {
       <MobileHeader />
 
       {/* Hero Section */}
-      <section className="relative py-20 md:py-32 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
+      <section className="relative py-16 md:py-24 lg:py-32 px-4 sm:px-6 lg:px-8 overflow-hidden">
+        {/* Enhanced Background Elements */}
+        <div className="absolute inset-0 overflow-hidden">
           <motion.div
-            initial={{ opacity: 0, y: 50 }}
+            animate={{ 
+              x: [0, 50, 0],
+              y: [0, -30, 0],
+              rotate: [0, 90, 180, 270, 360]
+            }}
+            transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
+            className="absolute top-10 left-10 w-64 h-64 bg-gradient-to-br from-[#2880CA]/15 to-transparent rounded-full blur-2xl"
+          ></motion.div>
+          <motion.div
+            animate={{ 
+              x: [0, -50, 0],
+              y: [0, 30, 0],
+              rotate: [360, 270, 180, 90, 0]
+            }}
+            transition={{ duration: 35, repeat: Infinity, ease: "linear" }}
+            className="absolute bottom-10 right-10 w-80 h-80 bg-gradient-to-br from-[#1e5f8a]/15 to-transparent rounded-full blur-2xl"
+          ></motion.div>
+          <motion.div
+            animate={{ 
+              scale: [1, 1.1, 1],
+              opacity: [0.4, 0.7, 0.4]
+            }}
+            transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-72 h-72 bg-gradient-to-br from-[#2880CA]/8 to-[#1e5f8a]/8 rounded-full blur-3xl"
+          ></motion.div>
+        </div>
+
+        <div className="max-w-7xl mx-auto relative">
+          <motion.div
+            initial={{ opacity: 0, y: 60 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1 }}
-            className="text-center mb-16"
+            transition={{ duration: 1.2 }}
+            className="text-center mb-16 md:mb-20"
           >
-            <motion.h1
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2, duration: 0.8 }}
-              className="text-6xl md:text-8xl font-bold mb-6"
-            >
-              <span className="bg-gradient-to-r from-[#2880CA] via-[#1e5f8a] to-[#2880CA] bg-clip-text text-transparent bg-[length:200%_auto] animate-gradient">
-                Forum des Entreprises
-              </span>
-            </motion.h1>
-            <motion.p
+            {/* Subtitle */}
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4, duration: 0.8 }}
-              className="text-xl md:text-2xl text-gray-600 mb-8 max-w-4xl mx-auto leading-relaxed"
+              transition={{ delay: 0.3, duration: 0.8 }}
+              className="mb-6"
             >
-              Connectez-vous avec les leaders de l'industrie et découvrez les opportunités qui façonnent votre avenir professionnel
+              <span className="inline-block px-4 py-2 bg-gradient-to-r from-[#2880CA]/10 to-[#1e5f8a]/10 rounded-full text-sm md:text-base font-medium text-[#2880CA] border border-[#2880CA]/20 backdrop-blur-sm">
+                ENSA Tétouan 2025
+              </span>
+            </motion.div>
+
+            {/* Main Title */}
+            <motion.h1
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5, duration: 1 }}
+              className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-bold mb-6 md:mb-8 px-4"
+            >
+              <span className="bg-gradient-to-r from-[#2880CA] via-[#1e5f8a] to-[#2880CA] bg-clip-text text-transparent bg-[length:200%_auto] animate-gradient leading-tight">
+                Forum des
+                <br />
+                Entreprises
+              </span>
+            </motion.h1>
+
+            {/* Description */}
+            <motion.p
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.7, duration: 0.8 }}
+              className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-gray-600 mb-8 md:mb-12 max-w-5xl mx-auto leading-relaxed px-4 font-light"
+            >
+              Connectez-vous avec les <span className="font-semibold text-[#2880CA]">leaders de l'industrie</span> et découvrez les opportunités qui façonnent votre avenir professionnel
             </motion.p>
+
+            {/* CTA Buttons */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
+              initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.6, duration: 0.8 }}
-              className="flex flex-col sm:flex-row gap-4 justify-center items-center"
+              transition={{ delay: 0.9, duration: 0.8 }}
+              className="flex flex-col sm:flex-row gap-4 md:gap-6 justify-center items-center px-4 mb-12 md:mb-16"
             >
-              <Link href="/register">
+              <Link href="/register" className="w-full sm:w-auto">
                 <motion.button
-                  whileHover={{ scale: 1.05, y: -3 }}
+                  whileHover={{ scale: 1.05, y: -5 }}
                   whileTap={{ scale: 0.95 }}
-                  className="px-8 py-4 bg-gradient-to-r from-[#2880CA] to-[#1e5f8a] text-white rounded-2xl font-semibold text-lg shadow-2xl hover:shadow-3xl transition-all duration-300"
+                  className="w-full sm:w-auto px-8 md:px-10 py-4 md:py-5 bg-gradient-to-r from-[#2880CA] to-[#1e5f8a] text-white rounded-2xl md:rounded-3xl font-bold text-lg md:text-xl shadow-2xl hover:shadow-3xl transition-all duration-300 relative overflow-hidden group"
                 >
-                  Rejoindre le Forum
+                  <span className="relative z-10 flex items-center justify-center">
+                    <svg className="w-5 h-5 md:w-6 md:h-6 mr-2 md:mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    Rejoindre le Forum
+                  </span>
+                  <div className="absolute inset-0 bg-gradient-to-r from-[#1e5f8a] to-[#2880CA] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 </motion.button>
               </Link>
-              <Link href="/login">
+              <Link href="/login" className="w-full sm:w-auto">
                 <motion.button
-                  whileHover={{ scale: 1.05, y: -3 }}
+                  whileHover={{ scale: 1.05, y: -5 }}
                   whileTap={{ scale: 0.95 }}
-                  className="px-8 py-4 bg-white/90 text-[#2880CA] border-2 border-[#2880CA] rounded-2xl font-semibold text-lg shadow-xl hover:shadow-2xl hover:bg-[#2880CA] hover:text-white transition-all duration-300"
+                  className="w-full sm:w-auto px-8 md:px-10 py-4 md:py-5 bg-white/95 backdrop-blur-sm text-[#2880CA] border-2 border-[#2880CA] rounded-2xl md:rounded-3xl font-bold text-lg md:text-xl shadow-xl hover:shadow-2xl hover:bg-[#2880CA] hover:text-white transition-all duration-300 group"
                 >
-                  Se connecter
+                  <span className="flex items-center justify-center">
+                    <svg className="w-5 h-5 md:w-6 md:h-6 mr-2 md:mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                    </svg>
+                    Se connecter
+                  </span>
                 </motion.button>
               </Link>
+            </motion.div>
+
+            {/* Stats or Additional Info */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1.1, duration: 0.8 }}
+              className="flex flex-wrap justify-center gap-6 md:gap-8 text-center"
+            >
+              <div className="flex flex-col items-center">
+                <div className="text-2xl md:text-3xl font-bold text-[#2880CA]">18+</div>
+                <div className="text-sm md:text-base text-gray-600">Entreprises</div>
+              </div>
+              <div className="flex flex-col items-center">
+                <div className="text-2xl md:text-3xl font-bold text-[#1e5f8a]">2</div>
+                <div className="text-sm md:text-base text-gray-600">Jours</div>
+              </div>
+              <div className="flex flex-col items-center">
+                <div className="text-2xl md:text-3xl font-bold text-[#2880CA]">500+</div>
+                <div className="text-sm md:text-base text-gray-600">Étudiants</div>
+              </div>
             </motion.div>
           </motion.div>
 
           {/* Countdown Timer */}
-          <div className="max-w-5xl mx-auto mb-20">
+          <div className="max-w-5xl mx-auto mb-12 md:mb-20 px-4">
             <CountdownTimer />
           </div>
         </div>
       </section>
 
+      {/* ADE Organizer Section */}
+      <section className="relative py-12 md:py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-[#2880CA]/5 via-white/50 to-[#1e5f8a]/5 backdrop-blur-sm">
+        <div className="max-w-6xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+            className="text-center mb-12 md:mb-16"
+          >
+            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-gray-800 mb-4 md:mb-6 px-4">
+              <span className="bg-gradient-to-r from-[#2880CA] to-[#1e5f8a] bg-clip-text text-transparent">
+                Organisé par ADE ENSA Tétouan
+              </span>
+            </h2>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            viewport={{ once: true }}
+            className="relative group max-w-4xl mx-auto"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-[#2880CA]/10 to-[#1e5f8a]/10 rounded-3xl blur-2xl group-hover:blur-3xl transition-all duration-500"></div>
+            <div className="relative bg-white/95 backdrop-blur-xl rounded-3xl p-8 md:p-12 shadow-2xl border border-white/20 group-hover:border-[#2880CA]/30 transition-all duration-500">
+              <div className="flex flex-col lg:flex-row items-center gap-8 md:gap-12">
+                {/* ADE Logo */}
+                <div className="flex-shrink-0">
+                  <div className="w-32 h-32 md:w-40 md:h-40 bg-white rounded-2xl shadow-lg flex items-center justify-center overflow-hidden border-4 border-[#2880CA]/20">
+                    <img 
+                      src="/logos/LOGO ADE (1).png" 
+                      alt="ADE ENSA Tétouan Logo"
+                      className="w-full h-full object-contain p-4"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        const nextElement = e.currentTarget.nextElementSibling as HTMLElement;
+                        if (nextElement) {
+                          nextElement.style.display = 'flex';
+                        }
+                      }}
+                    />
+                    <div className="w-full h-full bg-gradient-to-br from-[#2880CA] to-[#1e5f8a] rounded-xl items-center justify-center hidden">
+                      <span className="text-white font-bold text-2xl md:text-3xl">ADE</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ADE Content */}
+                <div className="flex-1 text-center lg:text-left">
+                  <h3 className="text-2xl md:text-3xl font-bold text-gray-800 mb-4">
+                    Association des Étudiants ENSA Tétouan
+                  </h3>
+                  <p className="text-base md:text-lg text-gray-600 leading-relaxed mb-6">
+                    L'Association des Étudiants de l'ENSA Tétouan (ADE) est fière d'organiser ce Forum des Entreprises 2025. 
+                    Notre mission est de créer des ponts entre les étudiants et les entreprises leaders du marché, 
+                    facilitant ainsi les opportunités de stage, d'emploi et de collaboration. 
+                    Nous nous engageons à offrir une expérience exceptionnelle qui favorise le développement 
+                    professionnel et les échanges constructifs entre tous les participants.
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                    <a 
+                      href="https://www.instagram.com/ade.ensate/" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-[#2880CA] to-[#1e5f8a] text-white rounded-xl font-semibold text-base shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+                    >
+                      <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                      </svg>
+                      Suivre ADE
+                    </a>
+                    <div className="flex items-center justify-center lg:justify-start text-sm text-gray-500">
+                      <svg className="w-4 h-4 mr-2 text-[#2880CA]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      ENSA Tétouan, Maroc
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
       {/* Companies Section */}
-      <section className="relative py-20 px-4 sm:px-6 lg:px-8">
+      <section className="relative py-12 md:py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
-            className="text-center mb-16"
+            className="text-center mb-12 md:mb-16"
           >
-            <h2 className="text-5xl md:text-6xl font-bold text-gray-800 mb-6">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-gray-800 mb-4 md:mb-6 px-4">
               <span className="bg-gradient-to-r from-[#2880CA] to-[#1e5f8a] bg-clip-text text-transparent">
                 Entreprises Participantes
               </span>
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed px-4">
               Découvrez les entreprises leaders qui participent au forum et explorez les opportunités qu'elles offrent
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4 lg:gap-6">
             {companies.map((company, index) => (
               <CompanyCard
                 key={company.name}
                 name={company.name}
                 sector={company.sector}
                 website={company.website}
+                logoPath={company.logoPath}
                 index={index}
               />
             ))}
@@ -358,31 +559,32 @@ export default function Home() {
       </section>
 
       {/* Sponsors Section */}
-      <section className="relative py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-white/50 to-blue-50/50 backdrop-blur-sm">
+      <section className="relative py-12 md:py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-white/50 to-blue-50/50 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
-            className="text-center mb-16"
+            className="text-center mb-12 md:mb-16"
           >
-            <h2 className="text-5xl md:text-6xl font-bold text-gray-800 mb-6">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-gray-800 mb-4 md:mb-6 px-4">
               <span className="bg-gradient-to-r from-[#2880CA] to-[#1e5f8a] bg-clip-text text-transparent">
                 Nos Sponsors
               </span>
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed px-4">
               Remercions nos partenaires qui rendent possible cet événement exceptionnel
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 md:gap-4 lg:gap-6">
             {sponsors.map((sponsor, index) => (
               <SponsorCard
                 key={sponsor.name}
                 name={sponsor.name}
                 category={sponsor.category}
+                logoPath={sponsor.logoPath}
                 index={index}
               />
             ))}
@@ -391,7 +593,7 @@ export default function Home() {
       </section>
 
       {/* Schedule Section */}
-      <section className="relative py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+      <section className="relative py-12 md:py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
         {/* Background Elements */}
         <div className="absolute inset-0 overflow-hidden">
           <motion.div
@@ -420,19 +622,19 @@ export default function Home() {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
-            className="text-center mb-16"
+            className="text-center mb-12 md:mb-16"
           >
-            <h2 className="text-5xl md:text-6xl font-bold text-white mb-6">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 md:mb-6 px-4">
               <span className="bg-gradient-to-r from-white via-blue-100 to-white bg-clip-text text-transparent">
                 Programme du Forum
               </span>
             </h2>
-            <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-base sm:text-lg md:text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed px-4">
               Découvrez le programme détaillé de ces deux journées exceptionnelles
             </p>
           </motion.div>
 
-          <div className="grid md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
             {/* Day 1 */}
             <motion.div
               initial={{ opacity: 0, x: -30 }}
@@ -441,15 +643,15 @@ export default function Home() {
               viewport={{ once: true }}
               className="relative group"
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-[#2880CA]/30 to-[#1e5f8a]/30 rounded-3xl blur-xl group-hover:blur-2xl transition-all duration-300"></div>
-              <div className="relative bg-gray-800/90 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-gray-700/50 group-hover:border-[#2880CA]/50 transition-all duration-300">
-                <h3 className="text-2xl font-bold text-white mb-6 flex items-center">
-                  <div className="w-8 h-8 bg-gradient-to-r from-[#2880CA] to-[#1e5f8a] rounded-lg flex items-center justify-center mr-3">
-                    <span className="text-white font-bold text-sm">15</span>
+              <div className="absolute inset-0 bg-gradient-to-br from-[#2880CA]/30 to-[#1e5f8a]/30 rounded-2xl md:rounded-3xl blur-xl group-hover:blur-2xl transition-all duration-300"></div>
+              <div className="relative bg-gray-800/90 backdrop-blur-xl rounded-2xl md:rounded-3xl p-6 md:p-8 shadow-2xl border border-gray-700/50 group-hover:border-[#2880CA]/50 transition-all duration-300">
+                <h3 className="text-xl md:text-2xl font-bold text-white mb-4 md:mb-6 flex items-center">
+                  <div className="w-6 h-6 md:w-8 md:h-8 bg-gradient-to-r from-[#2880CA] to-[#1e5f8a] rounded-lg flex items-center justify-center mr-2 md:mr-3">
+                    <span className="text-white font-bold text-xs md:text-sm">15</span>
                   </div>
                   Mercredi 15 Octobre 2025
                 </h3>
-                <div className="space-y-4">
+                <div className="space-y-3 md:space-y-4">
                   {[
                     { time: "09h30", event: "Accueil des participants" },
                     { time: "09h30-11h00", event: "Cérémonie d'ouverture" },
@@ -462,11 +664,13 @@ export default function Home() {
                       initial={{ opacity: 0, x: -20 }}
                       whileInView={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.1, duration: 0.5 }}
-                      className="flex items-center space-x-4 p-4 rounded-xl hover:bg-gray-700/50 transition-all duration-300 group/item"
+                      className="flex items-start space-x-3 md:space-x-4 p-3 md:p-4 rounded-xl hover:bg-gray-700/50 transition-all duration-300 group/item"
                     >
-                      <div className="w-3 h-3 bg-gradient-to-r from-[#2880CA] to-[#1e5f8a] rounded-full group-hover/item:scale-125 transition-transform duration-300"></div>
-                      <span className="text-[#2880CA] font-semibold min-w-[100px]">{item.time}</span>
-                      <span className="text-gray-300 group-hover/item:text-white transition-colors">{item.event}</span>
+                      <div className="w-2 h-2 md:w-3 md:h-3 bg-gradient-to-r from-[#2880CA] to-[#1e5f8a] rounded-full group-hover/item:scale-125 transition-transform duration-300 mt-2 md:mt-1 flex-shrink-0"></div>
+                      <div className="flex-1 min-w-0">
+                        <span className="text-[#2880CA] font-semibold text-sm md:text-base block mb-1">{item.time}</span>
+                        <span className="text-gray-300 group-hover/item:text-white transition-colors text-sm md:text-base leading-relaxed">{item.event}</span>
+                      </div>
                     </motion.div>
                   ))}
                 </div>
@@ -481,15 +685,15 @@ export default function Home() {
               viewport={{ once: true }}
               className="relative group"
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-[#1e5f8a]/30 to-[#2880CA]/30 rounded-3xl blur-xl group-hover:blur-2xl transition-all duration-300"></div>
-              <div className="relative bg-gray-800/90 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-gray-700/50 group-hover:border-[#1e5f8a]/50 transition-all duration-300">
-                <h3 className="text-2xl font-bold text-white mb-6 flex items-center">
-                  <div className="w-8 h-8 bg-gradient-to-r from-[#1e5f8a] to-[#2880CA] rounded-lg flex items-center justify-center mr-3">
-                    <span className="text-white font-bold text-sm">16</span>
+              <div className="absolute inset-0 bg-gradient-to-br from-[#1e5f8a]/30 to-[#2880CA]/30 rounded-2xl md:rounded-3xl blur-xl group-hover:blur-2xl transition-all duration-300"></div>
+              <div className="relative bg-gray-800/90 backdrop-blur-xl rounded-2xl md:rounded-3xl p-6 md:p-8 shadow-2xl border border-gray-700/50 group-hover:border-[#1e5f8a]/50 transition-all duration-300">
+                <h3 className="text-xl md:text-2xl font-bold text-white mb-4 md:mb-6 flex items-center">
+                  <div className="w-6 h-6 md:w-8 md:h-8 bg-gradient-to-r from-[#1e5f8a] to-[#2880CA] rounded-lg flex items-center justify-center mr-2 md:mr-3">
+                    <span className="text-white font-bold text-xs md:text-sm">16</span>
                   </div>
                   Jeudi 16 Octobre 2025
                 </h3>
-                <div className="space-y-4">
+                <div className="space-y-3 md:space-y-4">
                   {[
                     { time: "09h30", event: "Ouverture des stands" },
                     { time: "11h00-12h30", event: "Table ronde" },
@@ -501,11 +705,13 @@ export default function Home() {
                       initial={{ opacity: 0, x: 20 }}
                       whileInView={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.1, duration: 0.5 }}
-                      className="flex items-center space-x-4 p-4 rounded-xl hover:bg-gray-700/50 transition-all duration-300 group/item"
+                      className="flex items-start space-x-3 md:space-x-4 p-3 md:p-4 rounded-xl hover:bg-gray-700/50 transition-all duration-300 group/item"
                     >
-                      <div className="w-3 h-3 bg-gradient-to-r from-[#1e5f8a] to-[#2880CA] rounded-full group-hover/item:scale-125 transition-transform duration-300"></div>
-                      <span className="text-[#1e5f8a] font-semibold min-w-[100px]">{item.time}</span>
-                      <span className="text-gray-300 group-hover/item:text-white transition-colors">{item.event}</span>
+                      <div className="w-2 h-2 md:w-3 md:h-3 bg-gradient-to-r from-[#1e5f8a] to-[#2880CA] rounded-full group-hover/item:scale-125 transition-transform duration-300 mt-2 md:mt-1 flex-shrink-0"></div>
+                      <div className="flex-1 min-w-0">
+                        <span className="text-[#1e5f8a] font-semibold text-sm md:text-base block mb-1">{item.time}</span>
+                        <span className="text-gray-300 group-hover/item:text-white transition-colors text-sm md:text-base leading-relaxed">{item.event}</span>
+                      </div>
                     </motion.div>
                   ))}
                 </div>
