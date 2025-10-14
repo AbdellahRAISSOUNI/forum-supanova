@@ -157,81 +157,83 @@ export default function RoomStatusIndicator({
 
   if (compact) {
     return (
-      <div className="bg-white/70 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 p-4">
+      <div className="bg-white/95 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-lg border border-white/40 p-3 sm:p-4 hover:shadow-xl transition-all duration-300 group">
+        {/* Header with Status */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center space-x-3">
-            <div className={`w-3 h-3 rounded-full ${getStatusColor(roomStatus.status)} animate-pulse`}></div>
-            <div>
-              <h3 className="text-lg font-bold text-gray-800">{roomStatus.roomName}</h3>
-              <p className="text-sm text-gray-600">{roomStatus.companyName}</p>
+            <div className={`w-3 h-3 rounded-full ${getStatusColor(roomStatus.status)} shadow-sm`}></div>
+            <div className="min-w-0 flex-1">
+              <h3 className="text-sm sm:text-base font-bold text-slate-900 truncate">{roomStatus.roomName}</h3>
+              <p className="text-xs sm:text-sm text-slate-600 truncate">{roomStatus.companyName}</p>
             </div>
           </div>
           <div className="text-right">
-            <div className="text-sm text-gray-600 font-medium">{getStatusText(roomStatus.status)}</div>
-            {roomStatus.queueStats.totalWaiting > 0 && (
-              <div className="text-xs text-gray-500">
-                {roomStatus.queueStats.totalWaiting} en attente
-              </div>
-            )}
+            <div className={`text-xs sm:text-sm font-semibold px-2 py-1 rounded-full ${
+              roomStatus.status === 'available' ? 'bg-emerald-100 text-emerald-800' :
+              roomStatus.status === 'in_use' ? 'bg-red-100 text-red-800' :
+              roomStatus.status === 'waiting' ? 'bg-yellow-100 text-yellow-800' :
+              'bg-gray-100 text-gray-800'
+            }`}>
+              {getStatusText(roomStatus.status)}
+            </div>
           </div>
         </div>
         
-        {/* Compact Info Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {/* Current Interview */}
-          {roomStatus.currentInterview && (
-            <div className="bg-blue-50/70 p-3 rounded-lg">
-              <div className="flex items-center space-x-2 mb-1">
-                <UserIcon className="h-4 w-4 text-blue-600" />
-                <span className="text-sm font-medium text-blue-800">En cours</span>
+        {/* Mobile App-style Info Cards */}
+        <div className="space-y-2">
+          {/* Committee Member */}
+          {roomStatus.committeeMember && (
+            <div className="bg-gradient-to-r from-emerald-50/90 to-emerald-100/90 border border-emerald-200/50 rounded-lg p-2.5">
+              <div className="flex items-center space-x-2">
+                <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center">
+                  <UserIcon className="h-3 w-3 text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-emerald-800">Membre du comité</p>
+                  <p className="text-xs text-emerald-700 truncate">{roomStatus.committeeMember.name}</p>
+                </div>
               </div>
-              <p className="text-sm text-blue-700 truncate">{roomStatus.currentInterview.studentName}</p>
             </div>
           )}
           
           {/* Queue Information */}
           {roomStatus.queueStats.totalWaiting > 0 && (
-            <div className="bg-yellow-50/70 p-3 rounded-lg">
-              <div className="flex items-center space-x-2 mb-1">
-                <ClockIcon className="h-4 w-4 text-yellow-600" />
-                <span className="text-sm font-medium text-yellow-800">File</span>
-              </div>
-              <p className="text-sm text-yellow-700">
-                {roomStatus.queueStats.totalWaiting} étudiant{roomStatus.queueStats.totalWaiting > 1 ? 's' : ''}
-              </p>
-            </div>
-          )}
-          
-          {/* Committee Member */}
-          {roomStatus.committeeMember && (
-            <div className="bg-green-50/70 p-3 rounded-lg">
-              <div className="flex items-center space-x-2 mb-1">
-                <UserIcon className="h-4 w-4 text-green-600" />
-                <span className="text-sm font-medium text-green-800">Comité</span>
-              </div>
-              <p className="text-sm text-green-700 truncate">{roomStatus.committeeMember.name}</p>
-            </div>
-          )}
-          
-          {/* Equipment Status Summary */}
-          <div className="bg-gray-50/70 p-3 rounded-lg">
-            <div className="flex items-center space-x-2 mb-1">
-              <CheckCircleIcon className="h-4 w-4 text-gray-600" />
-              <span className="text-sm font-medium text-gray-800">Équipement</span>
-            </div>
-            <div className="flex space-x-1">
-              {Object.entries(roomStatus.equipmentStatus).map(([equipment, status]) => (
-                <div key={equipment} className="flex items-center">
-                  {getEquipmentIcon(equipment, status)}
+            <div className="bg-gradient-to-r from-yellow-50/90 to-yellow-100/90 border border-yellow-200/50 rounded-lg p-2.5">
+              <div className="flex items-center space-x-2">
+                <div className="w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center">
+                  <ClockIcon className="h-3 w-3 text-white" />
                 </div>
-              ))}
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-yellow-800">File d'attente</p>
+                  <p className="text-xs text-yellow-700">
+                    {roomStatus.queueStats.totalWaiting} étudiant{roomStatus.queueStats.totalWaiting > 1 ? 's' : ''}
+                  </p>
+                </div>
+              </div>
             </div>
-          </div>
+          )}
+          
+          {/* Current Interview */}
+          {roomStatus.currentInterview && (
+            <div className="bg-gradient-to-r from-blue-50/90 to-blue-100/90 border border-blue-200/50 rounded-lg p-2.5">
+              <div className="flex items-center space-x-2">
+                <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                  <UserIcon className="h-3 w-3 text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-blue-800">Entretien en cours</p>
+                  <p className="text-xs text-blue-700 truncate">{roomStatus.currentInterview.studentName}</p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
         
         {/* Last Updated */}
-        <div className="mt-3 text-xs text-gray-500 text-center">
-          Mis à jour: {new Date(roomStatus.lastUpdated).toLocaleTimeString('fr-FR')}
+        <div className="mt-3 pt-2 border-t border-slate-200/50">
+          <p className="text-[10px] text-slate-500 text-center">
+            Mis à jour: {new Date(roomStatus.lastUpdated).toLocaleTimeString('fr-FR')}
+          </p>
         </div>
       </div>
     );

@@ -7,6 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import RoomIndicator from '@/components/RoomIndicator';
 import { ArrowLeftIcon, QueueListIcon, ClockIcon, CheckCircleIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface Queue {
   _id: string;
@@ -23,6 +24,8 @@ interface Queue {
 export default function StudentQueuesPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const [isHeaderVisible, setIsHeaderVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
   
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [leavingQueueId, setLeavingQueueId] = useState<string | null>(null);
@@ -45,6 +48,26 @@ export default function StudentQueuesPage() {
     refetchInterval: 5000, // Refetch every 5 seconds
     enabled: !!session && session.user.role === 'student',
   });
+
+  // Smart scroll behavior for header
+  useEffect(() => {
+    const controlHeader = () => {
+      const currentScrollY = window.scrollY;
+      
+      if (currentScrollY > lastScrollY && currentScrollY > 100) {
+        // Scrolling down and past 100px
+        setIsHeaderVisible(false);
+      } else {
+        // Scrolling up
+        setIsHeaderVisible(true);
+      }
+      
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener('scroll', controlHeader);
+    return () => window.removeEventListener('scroll', controlHeader);
+  }, [lastScrollY]);
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -289,38 +312,60 @@ export default function StudentQueuesPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      {/* Modern Header - Mobile Responsive */}
-      <header className="bg-[#2880CA] backdrop-blur-md border-b border-blue-600 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-3 sm:py-4 space-y-3 sm:space-y-0">
-            <div className="flex items-center space-x-2 sm:space-x-4 w-full sm:w-auto">
-              <button
-                onClick={() => router.push('/dashboard/student')}
-                className="p-2 rounded-xl bg-white/20 hover:bg-white/30 transition-colors flex-shrink-0"
-              >
-                <ArrowLeftIcon className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-              </button>
-              <div className="min-w-0 flex-1">
-                <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-white truncate">
-                  Mes Files d'Attente
-                </h1>
-                <p className="text-blue-100 text-sm sm:text-base truncate">
-                  Suivez vos candidatures en temps réel
-                </p>
+      {/* Beautiful Modern Header with Smart Scroll */}
+      <AnimatePresence>
+        {isHeaderVisible && (
+          <motion.header
+            initial={{ y: -100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -100, opacity: 0 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            className="fixed top-0 left-0 right-0 z-50"
+          >
+            <div className="bg-gradient-to-r from-gray-600/90 via-gray-700/90 to-gray-800/90 backdrop-blur-xl border-b border-white/10 shadow-2xl">
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="flex items-center justify-between py-4">
+                  {/* Left Section - Back Button & Title */}
+                  <div className="flex items-center space-x-4">
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => router.push('/dashboard/student')}
+                      className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 transition-all duration-300 backdrop-blur-sm border border-white/20"
+                    >
+                      <ArrowLeftIcon className="w-5 h-5 text-white" />
+                    </motion.button>
+                    <div className="min-w-0">
+                      <h1 className="text-xl lg:text-2xl font-bold text-white truncate">
+                        Mes Files
+                      </h1>
+                      <p className="text-gray-200 text-sm truncate">
+                        Bonjour, {session.user.firstName} {session.user.name}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Right Section - Logout Button */}
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => signOut({ callbackUrl: '/' })}
+                    className="flex items-center space-x-2 px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-all duration-300 backdrop-blur-sm border border-white/20 text-sm font-medium"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    <span className="hidden sm:inline">Se déconnecter</span>
+                  </motion.button>
+                </div>
               </div>
             </div>
-            <button
-              onClick={() => signOut({ callbackUrl: '/' })}
-              className="bg-red-500 hover:bg-red-600 text-white px-3 sm:px-4 py-2 rounded-xl transition-colors backdrop-blur-sm border border-red-400/50 text-sm sm:text-base flex-shrink-0 self-end sm:self-auto"
-            >
-              Se déconnecter
-            </button>
-          </div>
-        </div>
-      </header>
+          </motion.header>
+        )}
+      </AnimatePresence>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-8">
         {/* Position Banner */}
         {showPositionBanner && (
           <div className={`mb-6 p-6 rounded-2xl border-2 shadow-lg ${
@@ -373,26 +418,26 @@ export default function StudentQueuesPage() {
         )}
 
         {/* Header */}
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold text-slate-900 mb-2">Vos Files d'Attente Actives</h2>
-          <p className="text-slate-600 text-lg">
+        <div className="mb-6">
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 mb-2">Vos Files d'Attente Actives</h2>
+          <p className="text-slate-600 text-sm sm:text-base md:text-lg">
             Consultez vos positions dans les files d'attente des entreprises.
           </p>
         </div>
 
         {/* Queues Summary */}
         {!isLoading && queues.length > 0 && (
-          <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6 mb-6">
+          <div className="bg-white/95 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-lg border border-white/40 p-3 sm:p-4 md:p-6 mb-6">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-2xl font-bold text-slate-900">Mes Files d'Attente</h2>
-                <p className="text-slate-600 mt-1">
+                <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-slate-900">Mes Files d'Attente</h2>
+                <p className="text-slate-600 mt-1 text-sm sm:text-base">
                   {queues.length} file{queues.length > 1 ? 's' : ''} d'attente active{queues.length > 1 ? 's' : ''}
                 </p>
               </div>
               <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse"></div>
-                <span className="text-sm text-slate-600">Mise à jour automatique</span>
+                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                <span className="text-xs sm:text-sm text-slate-600 hidden sm:inline">Mise à jour automatique</span>
               </div>
             </div>
           </div>
@@ -433,61 +478,64 @@ export default function StudentQueuesPage() {
             </div>
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-4">
             {queues.map((queue: Queue) => (
-              <div key={queue._id} className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6 hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.02]">
-                <div className="flex justify-between items-start mb-6">
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-2xl font-bold text-slate-900">{queue.companyName}</h3>
+              <div key={queue._id} className="bg-white/95 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-lg border border-white/40 p-3 sm:p-4 md:p-6 hover:shadow-xl transition-all duration-300 group">
+                {/* Header */}
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-slate-900 truncate">{queue.companyName}</h3>
                       <RoomIndicator room={queue.room} size="sm" />
                     </div>
-                    <div className="flex items-center space-x-6 text-sm text-slate-600">
-                      <span className="flex items-center bg-slate-100 px-3 py-1 rounded-full">
-                        <ClockIcon className="w-4 h-4 mr-2" />
-                        {queue.estimatedDuration} min
+                    <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-slate-600">
+                      <span className="flex items-center bg-slate-100 px-2 py-1 rounded-lg">
+                        <ClockIcon className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                        <span className="hidden sm:inline">{queue.estimatedDuration} min</span>
+                        <span className="sm:hidden">{queue.estimatedDuration}m</span>
                       </span>
-                      <span className="flex items-center bg-slate-100 px-3 py-1 rounded-full">
-                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <span className="flex items-center bg-slate-100 px-2 py-1 rounded-lg">
+                        <svg className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                         </svg>
-                        {getOpportunityTypeLabel(queue.opportunityType)}
+                        <span className="hidden sm:inline">{getOpportunityTypeLabel(queue.opportunityType)}</span>
+                        <span className="sm:hidden">{queue.opportunityType.toUpperCase()}</span>
                       </span>
                       {getPriorityBadge(session.user.role, session.user.studentStatus || 'external')}
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2 ml-4">
-                    <span className={`px-3 py-1 text-xs font-semibold rounded-full ${getStatusColor(queue.status)}`}>
+                  <div className="flex items-center space-x-2 ml-2">
+                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(queue.status)}`}>
                       {getStatusLabel(queue.status)}
                     </span>
                   </div>
                 </div>
 
                 {/* Position and Progress */}
-                <div className="mb-6">
-                  <div className="flex justify-between items-center mb-4">
-                    <span className="text-sm font-semibold text-slate-700">Votre position</span>
-                    <div className="flex items-center space-x-3">
+                <div className="mb-4">
+                  <div className="flex justify-between items-center mb-3">
+                    <span className="text-xs sm:text-sm font-semibold text-slate-700">Votre position</span>
+                    <div className="flex items-center space-x-2">
                       {queue.status === 'in_progress' && (
-                        <span className="px-3 py-1 text-xs font-bold bg-emerald-100 text-emerald-800 rounded-full animate-pulse">
+                        <span className="px-2 py-1 text-xs font-bold bg-emerald-100 text-emerald-800 rounded-full animate-pulse">
                           EN COURS
                         </span>
                       )}
                       {queue.position === 1 && queue.status === 'waiting' && (
-                        <span className="px-3 py-1 text-xs font-bold bg-blue-100 text-blue-800 rounded-full animate-pulse">
+                        <span className="px-2 py-1 text-xs font-bold bg-blue-100 text-blue-800 rounded-full animate-pulse">
                           VOTRE TOUR !
                         </span>
                       )}
-                      <span className={`px-4 py-2 text-lg font-bold rounded-xl shadow-lg ${getPositionBadgeColor(queue.position)}`}>
+                      <span className={`px-3 py-1.5 text-sm sm:text-lg font-bold rounded-lg shadow-md ${getPositionBadgeColor(queue.position)}`}>
                         #{queue.position}
                       </span>
                     </div>
                   </div>
                   
                   {/* Progress Bar */}
-                  <div className="w-full bg-slate-200 rounded-full h-3 mb-4">
+                  <div className="w-full bg-slate-200 rounded-full h-2 sm:h-3 mb-3">
                     <div 
-                      className={`h-3 rounded-full transition-all duration-500 ${
+                      className={`h-2 sm:h-3 rounded-full transition-all duration-500 ${
                         queue.status === 'in_progress' 
                           ? 'bg-gradient-to-r from-emerald-500 to-green-500' 
                           : queue.position === 1 && queue.status === 'waiting'
@@ -498,25 +546,25 @@ export default function StudentQueuesPage() {
                     ></div>
                   </div>
                   
-                  <div className="flex justify-between items-center">
-                    <p className="text-sm text-slate-500">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-1 sm:space-y-0">
+                    <p className="text-xs sm:text-sm text-slate-500">
                       Rejoint le {new Date(queue.joinedAt).toLocaleDateString('fr-FR', {
                         day: 'numeric',
-                        month: 'long',
+                        month: 'short',
                         hour: '2-digit',
                         minute: '2-digit'
                       })}
                     </p>
-                    <p className="text-sm text-slate-600 font-medium">
-                      Temps d'attente estimé: {getEstimatedWaitTime(queue.position, queue.estimatedDuration)} min
+                    <p className="text-xs sm:text-sm text-slate-600 font-medium">
+                      Temps d'attente: {getEstimatedWaitTime(queue.position, queue.estimatedDuration)} min
                     </p>
                   </div>
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex justify-end space-x-3">
+                <div className="flex flex-wrap justify-end gap-2">
                   {queue.status === 'in_progress' ? (
-                    <div className="px-6 py-3 bg-emerald-100 text-emerald-800 rounded-xl font-semibold border border-emerald-200">
+                    <div className="px-4 py-2 bg-emerald-100 text-emerald-800 rounded-lg font-semibold border border-emerald-200 text-sm">
                       Entretien en cours
                     </div>
                   ) : queue.status === 'waiting' ? (
@@ -526,7 +574,7 @@ export default function StudentQueuesPage() {
                         <button
                           onClick={() => handleRescheduleInterview(queue._id)}
                           disabled={reschedulingQueueId === queue._id}
-                          className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-sm font-medium shadow-lg"
+                          className="px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm font-medium shadow-md hover:shadow-lg"
                           title="Reporter l'entretien à la fin de la file"
                         >
                           {reschedulingQueueId === queue._id ? 'Report...' : 'Reporter'}
@@ -537,7 +585,7 @@ export default function StudentQueuesPage() {
                       <button
                         onClick={() => handleCancelInterview(queue._id)}
                         disabled={cancellingQueueId === queue._id}
-                        className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-sm font-medium shadow-lg"
+                        className="px-3 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm font-medium shadow-md hover:shadow-lg"
                         title="Annuler l'entretien"
                       >
                         {cancellingQueueId === queue._id ? 'Annulation...' : 'Annuler'}
@@ -547,14 +595,14 @@ export default function StudentQueuesPage() {
                       <button
                         onClick={() => handleLeaveQueue(queue._id)}
                         disabled={leavingQueueId === queue._id}
-                        className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-sm font-medium shadow-lg"
+                        className="px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm font-medium shadow-md hover:shadow-lg"
                         title="Quitter la file d'attente"
                       >
                         {leavingQueueId === queue._id ? 'Sortie...' : 'Quitter'}
                       </button>
                     </>
                   ) : (
-                    <div className="px-6 py-3 bg-slate-100 text-slate-600 rounded-xl font-semibold text-sm border border-slate-200">
+                    <div className="px-4 py-2 bg-slate-100 text-slate-600 rounded-lg font-semibold text-xs sm:text-sm border border-slate-200">
                       {getStatusLabel(queue.status)}
                     </div>
                   )}
