@@ -17,6 +17,7 @@ import {
 } from '@heroicons/react/24/outline';
 import RoomStatusIndicator from '@/components/RoomStatusIndicator';
 import AdvancedQueueManagement from '@/components/AdvancedQueueManagement';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface QueueData {
   company: {
@@ -117,6 +118,8 @@ export default function CommitteeDashboard() {
   const [historyPage, setHistoryPage] = useState(1);
   const [historyFilter, setHistoryFilter] = useState<{ status?: string; date?: string }>({});
   const [statsTimeFilter, setStatsTimeFilter] = useState<'today' | 'all'>('today');
+  const [isHeaderVisible, setIsHeaderVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
 
   // React Query for real-time updates
   const { data: queueData, isLoading, refetch } = useQuery({
@@ -168,6 +171,26 @@ export default function CommitteeDashboard() {
     },
     enabled: !!session && session.user.role === 'committee' && activeTab === 'history',
   });
+
+  // Smart scroll behavior for header
+  useEffect(() => {
+    const controlHeader = () => {
+      const currentScrollY = window.scrollY;
+      
+      if (currentScrollY > lastScrollY && currentScrollY > 100) {
+        // Scrolling down and past 100px
+        setIsHeaderVisible(false);
+      } else {
+        // Scrolling up
+        setIsHeaderVisible(true);
+      }
+      
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener('scroll', controlHeader);
+    return () => window.removeEventListener('scroll', controlHeader);
+  }, [lastScrollY]);
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -447,59 +470,60 @@ export default function CommitteeDashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      {/* Modern Header - Mobile Responsive */}
-      <header className="bg-[#2880CA] backdrop-blur-md border-b border-blue-600 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-3 sm:py-4 space-y-3 sm:space-y-0">
-            <div className="flex items-center space-x-2 sm:space-x-4 w-full sm:w-auto">
-              <button
-                onClick={() => router.push('/dashboard/committee')}
-                className="p-2 rounded-xl bg-white/20 hover:bg-white/30 transition-colors flex-shrink-0"
-              >
-                <ArrowLeftIcon className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-              </button>
-              <div className="min-w-0 flex-1">
-                <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-white truncate">
-                  Gestion des Files d'Attente
-                </h1>
-                <div className="flex items-center space-x-2">
-                  {queueData?.company.imageUrl && (
-                    <img
-                      src={queueData.company.imageUrl}
-                      alt={`${queueData.company.name} logo`}
-                      className="w-6 h-6 rounded border border-white/20"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.style.display = 'none';
-                      }}
-                    />
-                  )}
-                  <p className="text-blue-100 text-sm sm:text-base truncate">
-                    {queueData?.company.name} - Salle {queueData?.company.room}
-                  </p>
-                </div>
-          </div>
-            </div>
-            <div className="flex items-center justify-between w-full sm:w-auto space-x-2 sm:space-x-3">
-              <div className="hidden md:block text-right">
-                <p className="text-xs sm:text-sm text-blue-100">Connecté en tant que</p>
-                <p className="text-white font-medium text-sm sm:text-base truncate">
-                  {session?.user.firstName} {session?.user.name}
-                </p>
-              </div>
-          <button
-            onClick={() => signOut({ callbackUrl: '/' })}
-                className="bg-red-500 hover:bg-red-600 text-white px-3 sm:px-4 py-2 rounded-xl transition-colors backdrop-blur-sm border border-red-400/50 text-sm sm:text-base flex-shrink-0"
+      {/* Beautiful Modern Header with Smart Scroll */}
+      <AnimatePresence>
+        {isHeaderVisible && (
+          <motion.header
+            initial={{ y: -100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -100, opacity: 0 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            className="fixed top-0 left-0 right-0 z-50"
           >
-            Se déconnecter
-          </button>
+            <div className="bg-gradient-to-r from-blue-400/90 via-blue-500/90 to-blue-600/90 backdrop-blur-xl border-b border-white/10 shadow-2xl">
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="flex items-center justify-between py-4">
+                  {/* Left Section - Back Button & Title */}
+                  <div className="flex items-center space-x-3 flex-1 min-w-0">
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => router.push('/dashboard/committee')}
+                      className="p-2 rounded-xl bg-white/10 hover:bg-white/20 transition-all duration-300 backdrop-blur-sm border border-white/20 flex-shrink-0"
+                    >
+                      <ArrowLeftIcon className="w-4 h-4 text-white" />
+                    </motion.button>
+                    <div className="min-w-0 flex-1">
+                      <h1 className="text-lg sm:text-xl font-bold text-white truncate">
+                        Gestion des Files d'Attente
+                      </h1>
+                      <p className="text-gray-200 text-xs sm:text-sm truncate">
+                        {queueData?.company.name} - Salle {queueData?.company.room}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Right Section - Logout Button */}
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => signOut({ callbackUrl: '/' })}
+                    className="flex items-center space-x-2 px-3 py-2 bg-red-500/20 hover:bg-red-500/30 text-white rounded-xl transition-all duration-300 backdrop-blur-sm border border-red-400/30 hover:border-red-400/50 text-xs sm:text-sm font-medium flex-shrink-0"
+                  >
+                    <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    <span className="hidden sm:inline">Se déconnecter</span>
+                  </motion.button>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      </header>
+          </motion.header>
+        )}
+      </AnimatePresence>
 
       {/* Tab Navigation */}
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 pt-4 sm:pt-6">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 pt-20 sm:pt-24 md:pt-28">
         <div className="bg-white/70 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 overflow-hidden">
           <div className="flex border-b border-gray-200/50 overflow-x-auto">
             <button

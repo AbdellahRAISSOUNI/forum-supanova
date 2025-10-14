@@ -212,16 +212,16 @@ function LoginForm() {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6, delay: 0.5 }}
-              className="flex items-center justify-between"
+              className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0"
             >
               <div className="flex items-center">
                 <input
                   id="remember-me"
                   name="remember-me"
                   type="checkbox"
-                  className="h-4 w-4 text-[#2880CA] focus:ring-[#2880CA] border-gray-300 rounded"
+                  className="h-4 w-4 min-h-[16px] min-w-[16px] max-h-[16px] max-w-[16px] text-[#2880CA] focus:ring-[#2880CA] border-gray-300 rounded flex-shrink-0 appearance-none bg-white border-2 checked:bg-[#2880CA] checked:border-[#2880CA] focus:outline-none"
                 />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
+                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700 whitespace-nowrap">
                   Se souvenir de moi
                 </label>
               </div>
