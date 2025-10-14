@@ -16,7 +16,7 @@ export default function Footer() {
             className="group inline-flex items-center gap-2"
           >
             <span className="transition-all duration-300 group-hover:text-[#0a66c2] group-hover:underline underline-offset-4">
-              Made by Abdellah Raissouni
+              Made by Abdellah Raissouni and Rime &lt;3
             </span>
             <svg
               xmlns="http://www.w3.org/2000/svg"

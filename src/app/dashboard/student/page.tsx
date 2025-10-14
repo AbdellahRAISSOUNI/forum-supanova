@@ -205,7 +205,7 @@ export default function StudentDashboard() {
           <div className="bg-white/90 backdrop-blur-xl rounded-3xl sm:rounded-2xl shadow-2xl border border-white/30 p-4 sm:p-6 md:p-8">
             {/* Welcome Header */}
             <div className="text-center mb-4 sm:mb-8">
-              <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-[#2880CA] to-[#1e5f8a] rounded-2xl sm:rounded-3xl mb-3 sm:mb-4 shadow-lg">
+              <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-r from-blue-400/90 via-blue-500/90 to-blue-600/90 rounded-2xl sm:rounded-3xl mb-3 sm:mb-4 shadow-lg">
                 <svg className="w-6 h-6 sm:w-8 sm:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
@@ -222,7 +222,7 @@ export default function StudentDashboard() {
             <div className="grid grid-cols-3 gap-2 sm:gap-3 md:gap-6">
               <Link
                 href="/dashboard/student/companies"
-                className="group bg-gradient-to-br from-[#2880CA]/90 to-blue-600/90 hover:from-blue-600 hover:to-[#2880CA] backdrop-blur-sm text-white p-3 sm:p-4 md:p-6 rounded-xl sm:rounded-2xl transition-all duration-300 transform hover:scale-[1.02] hover:shadow-xl border border-white/20"
+                className="group bg-gradient-to-r from-blue-400/90 via-blue-500/90 to-blue-600/90 hover:from-blue-500 hover:via-blue-600 hover:to-blue-700 backdrop-blur-sm text-white p-3 sm:p-4 md:p-6 rounded-xl sm:rounded-2xl transition-all duration-300 transform hover:scale-[1.02] hover:shadow-xl border border-white/20"
               >
                 <div className="flex flex-col items-center space-y-2 sm:space-y-3">
                   <div className="p-2 sm:p-3 bg-white/20 rounded-lg sm:rounded-xl">
