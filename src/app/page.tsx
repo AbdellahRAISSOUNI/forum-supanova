@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
+import MobileHeader from "@/components/MobileHeader";
 
 // Countdown component
 const CountdownTimer = () => {
@@ -258,59 +259,8 @@ export default function Home() {
         ></motion.div>
       </div>
 
-      {/* Navigation */}
-      <motion.nav
-        initial={{ opacity: 0, y: -50 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8 }}
-        className="z-50 bg-white/80 backdrop-blur-xl shadow-lg border-b border-white/20 sticky top-0"
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <motion.div 
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 }}
-              className="flex items-center space-x-4"
-            >
-              <div
-                className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg bg-neutral-900 ring-1 ring-black/10"
-              >
-                <img src="/logo_forum.png" alt="Forum des Entreprises" className="w-12 h-12 object-contain" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-gray-800">Forum des Entreprises</h1>
-                <p className="text-sm text-gray-600">ENSA Tétouan</p>
-              </div>
-            </motion.div>
-            <motion.div 
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3 }}
-              className="flex space-x-4"
-            >
-              <Link href="/login">
-                <motion.button
-                  whileHover={{ scale: 1.05, y: -2 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="px-6 py-2 bg-gradient-to-r from-[#2880CA] to-[#1e5f8a] text-white rounded-xl font-medium shadow-lg hover:shadow-xl transition-all duration-300"
-                >
-                  Se connecter
-                </motion.button>
-              </Link>
-              <Link href="/register">
-                <motion.button
-                  whileHover={{ scale: 1.05, y: -2 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="px-6 py-2 bg-white/90 text-[#2880CA] border-2 border-[#2880CA] rounded-xl font-medium hover:bg-[#2880CA] hover:text-white transition-all duration-300 shadow-lg hover:shadow-xl"
-                >
-                  S'inscrire
-                </motion.button>
-              </Link>
-            </motion.div>
-          </div>
-        </div>
-      </motion.nav>
+      {/* Mobile-Responsive Navigation */}
+      <MobileHeader />
 
       {/* Hero Section */}
       <section className="relative py-20 md:py-32 px-4 sm:px-6 lg:px-8">

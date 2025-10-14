@@ -175,6 +175,21 @@ body {
   animation: rotate-in 0.8s ease-out;
 }
 
+.animate-slide-down {
+  animation: slide-down 0.2s ease-out;
+}
+
+@keyframes slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Smooth transitions */
 * {
   transition: all 0.2s ease-in-out;
@@ -224,13 +239,14 @@ body {
 }
 
 /* Input text styles */
-input[type="text"], 
-input[type="email"], 
-input[type="password"], 
-input[type="number"], 
-input[type="tel"], 
-input[type="url"], 
-textarea {
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="tel"],
+input[type="url"],
+textarea,
+select {
   color: #111827 !important;
   font-weight: 500;
 }
