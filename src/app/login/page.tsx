@@ -91,7 +91,7 @@ function LoginForm() {
           <Link href="/" className="inline-block">
             <motion.div
               whileHover={{ scale: 1.05 }}
-              className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg bg-black"
+              className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg bg-gradient-to-br from-[#2880CA]/10 to-[#1e5f8a]/10 ring-1 ring-[#2880CA]/20 backdrop-blur-sm"
             >
               <img src="/logo_forum.png" alt="Forum des Entreprises" className="w-14 h-14 object-contain" />
             </motion.div>
@@ -312,7 +312,7 @@ export default function LoginPage() {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="w-16 h-16 rounded-2xl flex items-center justify-center bg-black"
+          className="w-16 h-16 rounded-2xl flex items-center justify-center bg-gradient-to-br from-[#2880CA]/10 to-[#1e5f8a]/10 ring-1 ring-[#2880CA]/20 backdrop-blur-sm shadow-lg"
         >
           <img src="/logo_forum.png" alt="Forum des Entreprises" className="w-14 h-14 object-contain" />
         </motion.div>

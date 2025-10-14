@@ -593,7 +593,7 @@ export default function Home() {
       </section>
 
       {/* Schedule Section */}
-      <section className="relative py-12 md:py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+      <section className="relative py-8 sm:py-12 md:py-16 lg:py-20 px-3 sm:px-4 md:px-6 lg:px-8 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
         {/* Background Elements */}
         <div className="absolute inset-0 overflow-hidden">
           <motion.div
@@ -603,7 +603,7 @@ export default function Home() {
               rotate: [0, 180, 360]
             }}
             transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-            className="absolute top-20 left-20 w-72 h-72 bg-gradient-to-br from-[#2880CA]/20 to-transparent rounded-full blur-3xl"
+            className="absolute top-20 left-20 w-48 sm:w-64 md:w-72 h-48 sm:h-64 md:h-72 bg-gradient-to-br from-[#2880CA]/20 to-transparent rounded-full blur-3xl"
           ></motion.div>
           <motion.div
             animate={{ 
@@ -612,9 +612,9 @@ export default function Home() {
               rotate: [360, 180, 0]
             }}
             transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-            className="absolute bottom-20 right-20 w-96 h-96 bg-gradient-to-br from-[#1e5f8a]/20 to-transparent rounded-full blur-3xl"
+            className="absolute bottom-20 right-20 w-64 sm:w-80 md:w-96 h-64 sm:h-80 md:h-96 bg-gradient-to-br from-[#1e5f8a]/20 to-transparent rounded-full blur-3xl"
           ></motion.div>
-          </div>
+        </div>
 
         <div className="max-w-7xl mx-auto relative">
           <motion.div
@@ -622,19 +622,19 @@ export default function Home() {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
-            className="text-center mb-12 md:mb-16"
+            className="text-center mb-8 sm:mb-12 md:mb-16"
           >
-            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 md:mb-6 px-4">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-white mb-3 sm:mb-4 md:mb-6 px-2 sm:px-4">
               <span className="bg-gradient-to-r from-white via-blue-100 to-white bg-clip-text text-transparent">
                 Programme du Forum
               </span>
             </h2>
-            <p className="text-base sm:text-lg md:text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed px-4">
+            <p className="text-sm sm:text-base md:text-lg lg:text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed px-2 sm:px-4">
               Découvrez le programme détaillé de ces deux journées exceptionnelles
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6 md:gap-8">
             {/* Day 1 */}
             <motion.div
               initial={{ opacity: 0, x: -30 }}
@@ -643,15 +643,15 @@ export default function Home() {
               viewport={{ once: true }}
               className="relative group"
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-[#2880CA]/30 to-[#1e5f8a]/30 rounded-2xl md:rounded-3xl blur-xl group-hover:blur-2xl transition-all duration-300"></div>
-              <div className="relative bg-gray-800/90 backdrop-blur-xl rounded-2xl md:rounded-3xl p-6 md:p-8 shadow-2xl border border-gray-700/50 group-hover:border-[#2880CA]/50 transition-all duration-300">
-                <h3 className="text-xl md:text-2xl font-bold text-white mb-4 md:mb-6 flex items-center">
-                  <div className="w-6 h-6 md:w-8 md:h-8 bg-gradient-to-r from-[#2880CA] to-[#1e5f8a] rounded-lg flex items-center justify-center mr-2 md:mr-3">
-                    <span className="text-white font-bold text-xs md:text-sm">15</span>
+              <div className="absolute inset-0 bg-gradient-to-br from-[#2880CA]/30 to-[#1e5f8a]/30 rounded-xl sm:rounded-2xl md:rounded-3xl blur-xl group-hover:blur-2xl transition-all duration-300"></div>
+              <div className="relative bg-gray-800/90 backdrop-blur-xl rounded-xl sm:rounded-2xl md:rounded-3xl p-4 sm:p-6 md:p-8 shadow-2xl border border-gray-700/50 group-hover:border-[#2880CA]/50 transition-all duration-300">
+                <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-white mb-3 sm:mb-4 md:mb-6 flex items-center">
+                  <div className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 bg-gradient-to-r from-[#2880CA] to-[#1e5f8a] rounded-md sm:rounded-lg flex items-center justify-center mr-2 sm:mr-3 flex-shrink-0">
+                    <span className="text-white font-bold text-xs sm:text-sm">15</span>
                   </div>
-                  Mercredi 15 Octobre 2025
+                  <span className="text-sm sm:text-base md:text-lg lg:text-xl">Mercredi 15 Octobre 2025</span>
                 </h3>
-                <div className="space-y-3 md:space-y-4">
+                <div className="space-y-2 sm:space-y-3 md:space-y-4">
                   {[
                     { time: "09h30", event: "Accueil des participants" },
                     { time: "09h30-11h00", event: "Cérémonie d'ouverture" },
@@ -664,12 +664,12 @@ export default function Home() {
                       initial={{ opacity: 0, x: -20 }}
                       whileInView={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.1, duration: 0.5 }}
-                      className="flex items-start space-x-3 md:space-x-4 p-3 md:p-4 rounded-xl hover:bg-gray-700/50 transition-all duration-300 group/item"
+                      className="flex items-start space-x-2 sm:space-x-3 md:space-x-4 p-2 sm:p-3 md:p-4 rounded-lg sm:rounded-xl hover:bg-gray-700/50 transition-all duration-300 group/item"
                     >
-                      <div className="w-2 h-2 md:w-3 md:h-3 bg-gradient-to-r from-[#2880CA] to-[#1e5f8a] rounded-full group-hover/item:scale-125 transition-transform duration-300 mt-2 md:mt-1 flex-shrink-0"></div>
+                      <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 md:w-3 md:h-3 bg-gradient-to-r from-[#2880CA] to-[#1e5f8a] rounded-full group-hover/item:scale-125 transition-transform duration-300 mt-1.5 sm:mt-2 md:mt-1 flex-shrink-0"></div>
                       <div className="flex-1 min-w-0">
-                        <span className="text-[#2880CA] font-semibold text-sm md:text-base block mb-1">{item.time}</span>
-                        <span className="text-gray-300 group-hover/item:text-white transition-colors text-sm md:text-base leading-relaxed">{item.event}</span>
+                        <span className="text-[#2880CA] font-semibold text-xs sm:text-sm md:text-base block mb-0.5 sm:mb-1">{item.time}</span>
+                        <span className="text-gray-300 group-hover/item:text-white transition-colors text-xs sm:text-sm md:text-base leading-relaxed">{item.event}</span>
                       </div>
                     </motion.div>
                   ))}
@@ -685,15 +685,15 @@ export default function Home() {
               viewport={{ once: true }}
               className="relative group"
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-[#1e5f8a]/30 to-[#2880CA]/30 rounded-2xl md:rounded-3xl blur-xl group-hover:blur-2xl transition-all duration-300"></div>
-              <div className="relative bg-gray-800/90 backdrop-blur-xl rounded-2xl md:rounded-3xl p-6 md:p-8 shadow-2xl border border-gray-700/50 group-hover:border-[#1e5f8a]/50 transition-all duration-300">
-                <h3 className="text-xl md:text-2xl font-bold text-white mb-4 md:mb-6 flex items-center">
-                  <div className="w-6 h-6 md:w-8 md:h-8 bg-gradient-to-r from-[#1e5f8a] to-[#2880CA] rounded-lg flex items-center justify-center mr-2 md:mr-3">
-                    <span className="text-white font-bold text-xs md:text-sm">16</span>
+              <div className="absolute inset-0 bg-gradient-to-br from-[#1e5f8a]/30 to-[#2880CA]/30 rounded-xl sm:rounded-2xl md:rounded-3xl blur-xl group-hover:blur-2xl transition-all duration-300"></div>
+              <div className="relative bg-gray-800/90 backdrop-blur-xl rounded-xl sm:rounded-2xl md:rounded-3xl p-4 sm:p-6 md:p-8 shadow-2xl border border-gray-700/50 group-hover:border-[#1e5f8a]/50 transition-all duration-300">
+                <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-white mb-3 sm:mb-4 md:mb-6 flex items-center">
+                  <div className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 bg-gradient-to-r from-[#1e5f8a] to-[#2880CA] rounded-md sm:rounded-lg flex items-center justify-center mr-2 sm:mr-3 flex-shrink-0">
+                    <span className="text-white font-bold text-xs sm:text-sm">16</span>
                   </div>
-                  Jeudi 16 Octobre 2025
+                  <span className="text-sm sm:text-base md:text-lg lg:text-xl">Jeudi 16 Octobre 2025</span>
                 </h3>
-                <div className="space-y-3 md:space-y-4">
+                <div className="space-y-2 sm:space-y-3 md:space-y-4">
                   {[
                     { time: "09h30", event: "Ouverture des stands" },
                     { time: "11h00-12h30", event: "Table ronde" },
@@ -705,12 +705,12 @@ export default function Home() {
                       initial={{ opacity: 0, x: 20 }}
                       whileInView={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.1, duration: 0.5 }}
-                      className="flex items-start space-x-3 md:space-x-4 p-3 md:p-4 rounded-xl hover:bg-gray-700/50 transition-all duration-300 group/item"
+                      className="flex items-start space-x-2 sm:space-x-3 md:space-x-4 p-2 sm:p-3 md:p-4 rounded-lg sm:rounded-xl hover:bg-gray-700/50 transition-all duration-300 group/item"
                     >
-                      <div className="w-2 h-2 md:w-3 md:h-3 bg-gradient-to-r from-[#1e5f8a] to-[#2880CA] rounded-full group-hover/item:scale-125 transition-transform duration-300 mt-2 md:mt-1 flex-shrink-0"></div>
+                      <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 md:w-3 md:h-3 bg-gradient-to-r from-[#1e5f8a] to-[#2880CA] rounded-full group-hover/item:scale-125 transition-transform duration-300 mt-1.5 sm:mt-2 md:mt-1 flex-shrink-0"></div>
                       <div className="flex-1 min-w-0">
-                        <span className="text-[#1e5f8a] font-semibold text-sm md:text-base block mb-1">{item.time}</span>
-                        <span className="text-gray-300 group-hover/item:text-white transition-colors text-sm md:text-base leading-relaxed">{item.event}</span>
+                        <span className="text-[#1e5f8a] font-semibold text-xs sm:text-sm md:text-base block mb-0.5 sm:mb-1">{item.time}</span>
+                        <span className="text-gray-300 group-hover/item:text-white transition-colors text-xs sm:text-sm md:text-base leading-relaxed">{item.event}</span>
                       </div>
                     </motion.div>
                   ))}
@@ -718,6 +718,24 @@ export default function Home() {
               </div>
             </motion.div>
           </div>
+
+          {/* Mobile-friendly additional info */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.4 }}
+            viewport={{ once: true }}
+            className="mt-8 sm:mt-12 md:mt-16 text-center"
+          >
+            <div className="inline-flex items-center px-3 sm:px-6 py-2 sm:py-3 bg-white/5 backdrop-blur-xl rounded-xl sm:rounded-2xl border border-white/10">
+              <svg className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400 mr-2 sm:mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span className="text-gray-300 text-xs sm:text-sm md:text-base">
+                Programme susceptible de modifications
+              </span>
+            </div>
+          </motion.div>
         </div>
       </section>
 

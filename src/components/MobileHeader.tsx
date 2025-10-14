@@ -31,7 +31,7 @@ export default function MobileHeader() {
             transition={{ delay: 0.2 }}
             className="flex items-center space-x-4"
           >
-            <div className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg bg-neutral-900 ring-1 ring-black/10">
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg bg-gradient-to-br from-[#2880CA]/10 to-[#1e5f8a]/10 ring-1 ring-[#2880CA]/20 backdrop-blur-sm">
               <img src="/logo_forum.png" alt="Forum des Entreprises" className="w-12 h-12 object-contain" />
             </div>
             <div>
