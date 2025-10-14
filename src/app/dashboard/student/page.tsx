@@ -156,7 +156,7 @@ export default function StudentDashboard() {
             transition={{ duration: 0.3, ease: "easeInOut" }}
             className="fixed top-0 left-0 right-0 z-50"
           >
-            <div className="bg-gradient-to-r from-gray-600/90 via-gray-700/90 to-gray-800/90 backdrop-blur-xl border-b border-white/10 shadow-2xl">
+            <div className="bg-gradient-to-r from-blue-400/90 via-blue-500/90 to-blue-600/90 backdrop-blur-xl border-b border-white/10 shadow-2xl">
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between py-4">
                   {/* Left Section - Back Button & Title */}
@@ -199,7 +199,7 @@ export default function StudentDashboard() {
       </AnimatePresence>
 
         {/* Main Content */}
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 sm:pt-16 md:pt-20 pb-8">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 sm:pt-24 md:pt-28 pb-8">
         {/* Mobile App-like Welcome Section */}
         <div className="mb-4 sm:mb-8">
           <div className="bg-white/90 backdrop-blur-xl rounded-3xl sm:rounded-2xl shadow-2xl border border-white/30 p-4 sm:p-6 md:p-8">
