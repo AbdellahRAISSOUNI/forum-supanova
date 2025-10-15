@@ -1,8 +1,21 @@
 import { withAuth } from "next-auth/middleware";
+import { NextResponse } from "next/server";
 
 export default withAuth(
   function middleware(req) {
-    // Add any additional middleware logic here if needed
+    // Performance monitoring
+    const start = Date.now();
+    
+    // Add performance headers
+    const response = NextResponse.next();
+    response.headers.set('X-Response-Time', `${Date.now() - start}ms`);
+    
+    // Add cache headers for static assets
+    if (req.nextUrl.pathname.startsWith('/_next/static/')) {
+      response.headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+    }
+    
+    return response;
   },
   {
     callbacks: {

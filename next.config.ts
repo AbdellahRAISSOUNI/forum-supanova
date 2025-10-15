@@ -20,6 +20,15 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  // Performance optimizations
+  compress: true,
+  poweredByHeader: false,
+  reactStrictMode: false, // Disable for better performance in production
+  swcMinify: true,
+  experimental: {
+    optimizePackageImports: ['@heroicons/react', 'lucide-react'],
+    serverComponentsExternalPackages: ['mongoose'],
+  },
   // PWA Configuration
   async headers() {
     return [

@@ -3,6 +3,7 @@ import connectDB from '@/lib/db';
 import User from '@/lib/models/User';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
+import { cache, CACHE_KEYS } from '@/lib/cache';
 
 const registerSchema = z.object({
   firstName: z.string().min(1, 'Le prénom est requis'),
@@ -48,8 +49,13 @@ export async function POST(request: NextRequest) {
     // Connect to database
     await connectDB();
 
-    // Check if user already exists
-    const existingUser = await User.findOne({ email });
+    const emailLower = email.toLowerCase();
+
+    // Check if user already exists with optimized query
+    const existingUser = await User.findOne({ email: emailLower })
+      .select('_id email')
+      .lean();
+    
     if (existingUser) {
       return NextResponse.json(
         { error: 'Un utilisateur avec cet email existe déjà' },
@@ -57,21 +63,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Hash password with lower rounds for better performance
+    const hashedPassword = await bcrypt.hash(password, 8);
 
-    // Create new user
-    const newUser = new User({
+    // Create new user with optimized insert
+    const newUser = await User.create({
       firstName,
       name,
-      email,
+      email: emailLower,
       password: hashedPassword,
       role: 'student',
       studentStatus,
       opportunityType,
     });
 
-    await newUser.save();
+    // Clear any cached user data for this email
+    cache.delete(CACHE_KEYS.USER_BY_EMAIL(emailLower));
 
     return NextResponse.json(
       {

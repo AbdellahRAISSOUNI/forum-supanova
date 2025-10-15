@@ -57,6 +57,11 @@ const userSchema = new mongoose.Schema<IUser>({
 });
 
 // Email index is automatically created by unique: true constraint
+// Additional indexes for performance
+userSchema.index({ email: 1 }, { unique: true });
+userSchema.index({ role: 1 });
+userSchema.index({ createdAt: -1 });
+userSchema.index({ email: 1, role: 1 }); // Compound index for auth queries
 
 // Export the model
 export default mongoose.models.User || mongoose.model<IUser>('User', userSchema);

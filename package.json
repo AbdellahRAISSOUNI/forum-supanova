@@ -7,7 +7,8 @@
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "eslint",
-    "seed:admin": "tsx scripts/create-admin.ts"
+    "seed:admin": "tsx scripts/create-admin.ts",
+    "create-indexes": "tsx scripts/create-indexes.ts"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",

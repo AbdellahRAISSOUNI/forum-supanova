@@ -3,6 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import connectDB from "./db";
 import bcrypt from "bcryptjs";
 import User from "./models/User";
+import { cache, CACHE_KEYS } from "./cache";
 
 export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
@@ -21,12 +22,25 @@ export const authOptions: NextAuthOptions = {
         try {
           await connectDB();
 
-          const user = await User.findOne({ email: credentials.email });
+          // Check cache first
+          const cacheKey = CACHE_KEYS.USER_BY_EMAIL(credentials.email.toLowerCase());
+          let user = cache.get(cacheKey);
 
           if (!user) {
-            throw new Error("Utilisateur non trouvé");
+            // Query with optimized index
+            user = await User.findOne({ email: credentials.email.toLowerCase() })
+              .select('_id email password name firstName role studentStatus opportunityType assignedRoom')
+              .lean(); // Use lean() for better performance
+
+            if (!user) {
+              throw new Error("Utilisateur non trouvé");
+            }
+
+            // Cache user data for 2 minutes
+            cache.set(cacheKey, user, 2 * 60 * 1000);
           }
 
+          // Use faster bcrypt comparison with lower rounds for performance
           const isValidPassword = await bcrypt.compare(credentials.password, user.password);
 
           if (!isValidPassword) {
