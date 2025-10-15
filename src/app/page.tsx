@@ -241,12 +241,12 @@ export default function Home() {
     { name: "Stellantis", sector: "Automobile", website: "https://www.stellantis.com", logoPath: "/logos/stellantis.png" },
     { name: "Babel Group", sector: "Conseil & Services", website: "https://www.babelgroup.com", logoPath: "/logos/babel.png" },
     { name: "Expleo Group", sector: "Ingénierie & Innovation", website: "https://www.expleo.com", logoPath: "/logos/png-transparent-expleo-group-hd-logo.png" },
-    { name: "ADE", sector: "Emploi & Formation", website: "https://www.anapec.org", logoPath: "/logos/LOGO ADE (1).png" },
+    
     { name: "ALTEN", sector: "Ingénierie & Conseil", website: "https://www.alten.com", logoPath: "/logos/ALTEN_BLACK.png" },
     { name: "NTT Data", sector: "Services IT", website: "https://www.nttdata.com", logoPath: "/logos/GlobalLogo_NTTDATA_Color.png" },
-    { name: "ISIC", sector: "Institut Supérieur", website: "https://www.isic.ma", logoPath: "/logos/ISIC_logo_COLOUR_rgb.png" },
+    
     { name: "CYPE", sector: "Logiciels BTP", website: "https://www.cype.com", logoPath: "/logos/cype.png" },
-    { name: "JTEKT", sector: "Technologies Automobile", website: "https://www.jtekt.com", logoPath: "/logos/jtekt.png" },
+    
     { name: "Serdilab", sector: "Laboratoire", website: "https://www.serdilab.com", logoPath: "/logos/serdilab.png" }
   ];
 
@@ -256,7 +256,7 @@ export default function Home() {
     { name: "VISEO MAROC", category: "Silver", logoPath: "/logos/LOGO VISEO MAROC PNG.png" },
     { name: "IRESEN", category: "Silver", logoPath: "/logos/iresen.png" },
     { name: "NTT Data", category: "Silver", logoPath: "/logos/GlobalLogo_NTTDATA_Color.png" },
-    { name: "ISIC", category: "Silver", logoPath: "/logos/ISIC_logo_COLOUR_rgb.png" }
+    
   ];
 
   return (
@@ -436,127 +436,9 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ADE Organizer Section */}
-      <section className="relative py-12 md:py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-[#2880CA]/5 via-white/50 to-[#1e5f8a]/5 backdrop-blur-sm">
-        <div className="max-w-6xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            className="text-center mb-12 md:mb-16"
-          >
-            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-gray-800 mb-4 md:mb-6 px-4">
-              <span className="bg-gradient-to-r from-[#2880CA] to-[#1e5f8a] bg-clip-text text-transparent">
-                Organisé par ADE ENSA Tétouan
-              </span>
-            </h2>
-          </motion.div>
+      
 
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            viewport={{ once: true }}
-            className="relative group max-w-4xl mx-auto"
-          >
-            <div className="absolute inset-0 bg-gradient-to-br from-[#2880CA]/10 to-[#1e5f8a]/10 rounded-3xl blur-2xl group-hover:blur-3xl transition-all duration-500"></div>
-            <div className="relative bg-white/95 backdrop-blur-xl rounded-3xl p-8 md:p-12 shadow-2xl border border-white/20 group-hover:border-[#2880CA]/30 transition-all duration-500">
-              <div className="flex flex-col lg:flex-row items-center gap-8 md:gap-12">
-                {/* ADE Logo */}
-                <div className="flex-shrink-0">
-                  <div className="w-32 h-32 md:w-40 md:h-40 bg-white rounded-2xl shadow-lg flex items-center justify-center overflow-hidden border-4 border-[#2880CA]/20">
-                    <img 
-                      src="/logos/LOGO ADE (1).png" 
-                      alt="ADE ENSA Tétouan Logo"
-                      className="w-full h-full object-contain p-4"
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                        const nextElement = e.currentTarget.nextElementSibling as HTMLElement;
-                        if (nextElement) {
-                          nextElement.style.display = 'flex';
-                        }
-                      }}
-                    />
-                    <div className="w-full h-full bg-gradient-to-br from-[#2880CA] to-[#1e5f8a] rounded-xl items-center justify-center hidden">
-                      <span className="text-white font-bold text-2xl md:text-3xl">ADE</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* ADE Content */}
-                <div className="flex-1 text-center lg:text-left">
-                  <h3 className="text-2xl md:text-3xl font-bold text-gray-800 mb-4">
-                    Association des Étudiants ENSA Tétouan
-                  </h3>
-                  <p className="text-base md:text-lg text-gray-600 leading-relaxed mb-6">
-                    L'Association des Étudiants de l'ENSA Tétouan (ADE) est fière d'organiser ce Forum des Entreprises 2025. 
-                    Notre mission est de créer des ponts entre les étudiants et les entreprises leaders du marché, 
-                    facilitant ainsi les opportunités de stage, d'emploi et de collaboration. 
-                    Nous nous engageons à offrir une expérience exceptionnelle qui favorise le développement 
-                    professionnel et les échanges constructifs entre tous les participants.
-                  </p>
-                  <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                    <a 
-                      href="https://www.instagram.com/ade.ensate/" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-[#2880CA] to-[#1e5f8a] text-white rounded-xl font-semibold text-base shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
-                    >
-                      <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-                      </svg>
-                      Suivre ADE
-                    </a>
-                    <div className="flex items-center justify-center lg:justify-start text-sm text-gray-500">
-                      <svg className="w-4 h-4 mr-2 text-[#2880CA]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                      ENSA Tétouan, Maroc
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Companies Section */}
-      <section className="relative py-12 md:py-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            className="text-center mb-12 md:mb-16"
-          >
-            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-gray-800 mb-4 md:mb-6 px-4">
-              <span className="bg-gradient-to-r from-[#2880CA] to-[#1e5f8a] bg-clip-text text-transparent">
-                Entreprises Participantes
-              </span>
-            </h2>
-            <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed px-4">
-              Découvrez les entreprises leaders qui participent au forum et explorez les opportunités qu'elles offrent
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4 lg:gap-6">
-            {companies.map((company, index) => (
-              <CompanyCard
-                key={company.name}
-                name={company.name}
-                sector={company.sector}
-                website={company.website}
-                logoPath={company.logoPath}
-                index={index}
-              />
-            ))}
-          </div>
-        </div>
-      </section>
+      
 
       {/* Sponsors Section */}
       <section className="relative py-12 md:py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-white/50 to-blue-50/50 backdrop-blur-sm">

@@ -61,22 +61,30 @@ export async function GET() {
       switch (interview.status) {
         case 'waiting':
           action = 'Rejoint la file';
-          description = `${interview.studentId.firstName} ${interview.studentId.name} a rejoint la file d'attente de ${interview.companyId.name}`;
+          description = interview.studentId ? 
+            `${interview.studentId.firstName} ${interview.studentId.name} a rejoint la file d'attente de ${interview.companyId.name}` :
+            `Un étudiant a rejoint la file d'attente de ${interview.companyId.name}`;
           timestamp = interview.joinedAt;
           break;
         case 'in_progress':
           action = 'Entretien démarré';
-          description = `Entretien démarré pour ${interview.studentId.firstName} ${interview.studentId.name} avec ${interview.companyId.name}`;
+          description = interview.studentId ? 
+            `Entretien démarré pour ${interview.studentId.firstName} ${interview.studentId.name} avec ${interview.companyId.name}` :
+            `Entretien démarré avec ${interview.companyId.name}`;
           timestamp = interview.startedAt;
           break;
         case 'completed':
           action = 'Entretien terminé';
-          description = `Entretien terminé pour ${interview.studentId.firstName} ${interview.studentId.name} avec ${interview.companyId.name}`;
+          description = interview.studentId ? 
+            `Entretien terminé pour ${interview.studentId.firstName} ${interview.studentId.name} avec ${interview.companyId.name}` :
+            `Entretien terminé avec ${interview.companyId.name}`;
           timestamp = interview.completedAt;
           break;
         case 'cancelled':
           action = 'Sorti de la file';
-          description = `${interview.studentId.firstName} ${interview.studentId.name} a quitté la file d'attente de ${interview.companyId.name}`;
+          description = interview.studentId ? 
+            `${interview.studentId.firstName} ${interview.studentId.name} a quitté la file d'attente de ${interview.companyId.name}` :
+            `Un étudiant a quitté la file d'attente de ${interview.companyId.name}`;
           break;
       }
 
@@ -84,12 +92,12 @@ export async function GET() {
         id: `interview-${interview._id}`,
         type: 'interview',
         timestamp,
-        studentName: `${interview.studentId.firstName} ${interview.studentId.name}`,
-        studentEmail: interview.studentId.email,
-        studentStatus: interview.studentId.studentStatus,
+        studentName: interview.studentId ? `${interview.studentId.firstName} ${interview.studentId.name}` : 'Étudiant supprimé',
+        studentEmail: interview.studentId?.email || '',
+        studentStatus: interview.studentId?.studentStatus || '',
         opportunityType: interview.opportunityType,
-        companyName: interview.companyId.name,
-        room: interview.companyId.room,
+        companyName: interview.companyId?.name || 'Entreprise supprimée',
+        room: interview.companyId?.room || '',
         action,
         description,
         status: interview.status

@@ -96,6 +96,12 @@ export default function AdminDashboard() {
   const [selectedQueue, setSelectedQueue] = useState<QueueOverview | null>(null);
   const [showQueueModal, setShowQueueModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'companies' | 'committee' | 'system' | 'users'>('overview');
+  
+  // Delete interviews state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [currentInterviews, setCurrentInterviews] = useState<any[]>([]);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isLoadingInterviews, setIsLoadingInterviews] = useState(false);
 
   // Fetch admin statistics
   const { data: stats, isLoading: statsLoading } = useQuery({
@@ -194,6 +200,46 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleDeleteAllInterviews = async () => {
+    setIsLoadingInterviews(true);
+    try {
+      const response = await fetch('/api/admin/interviews/delete-all');
+      if (!response.ok) throw new Error('Failed to fetch interviews');
+      const data = await response.json();
+      setCurrentInterviews(data.currentInterviews || []);
+      setShowDeleteModal(true);
+    } catch (error) {
+      console.error('Error fetching current interviews:', error);
+      toast.error('Erreur lors du chargement des entretiens');
+    } finally {
+      setIsLoadingInterviews(false);
+    }
+  };
+
+  const confirmDeleteAllInterviews = async () => {
+    setIsDeleting(true);
+    try {
+      const response = await fetch('/api/admin/interviews/delete-all', {
+        method: 'DELETE'
+      });
+      
+      if (!response.ok) throw new Error('Failed to delete interviews');
+      
+      const data = await response.json();
+      toast.success(data.message);
+      setShowDeleteModal(false);
+      setCurrentInterviews([]);
+      
+      // Refresh the page to update stats
+      window.location.reload();
+    } catch (error) {
+      console.error('Error deleting interviews:', error);
+      toast.error('Erreur lors de la suppression des entretiens');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   if (status === 'loading' || statsLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -249,8 +295,9 @@ export default function AdminDashboard() {
         </div>
       </header>
 
+
       {/* Tab Navigation */}
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 pt-4 sm:pt-6">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
         <div className="bg-white/70 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 overflow-hidden">
           <div className="flex border-b border-gray-200/50 overflow-x-auto">
             <button
@@ -366,6 +413,52 @@ export default function AdminDashboard() {
           <UsersTabContent />
         )}
       </main>
+
+      {/* DEDICATED DELETE SECTION - SEPARATE FROM TABS */}
+      <section className="max-w-7xl mx-auto py-8 px-3 sm:px-4 lg:px-8">
+        <div className="bg-gradient-to-r from-red-50 to-red-100 border-2 border-red-300 rounded-2xl shadow-xl p-8">
+          <div className="text-center">
+            <div className="mb-6">
+              <h2 className="text-3xl font-bold text-red-800 mb-2">
+                🚨 Actions Administrateur
+              </h2>
+              <p className="text-lg text-red-700">
+                Supprimer tous les entretiens en cours du système
+              </p>
+            </div>
+            
+            <div className="flex justify-center">
+              <button
+                onClick={handleDeleteAllInterviews}
+                disabled={isLoadingInterviews}
+                className="group relative inline-flex items-center px-12 py-6 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white font-bold rounded-2xl transition-all duration-300 text-xl shadow-2xl hover:shadow-3xl transform hover:scale-105 disabled:transform-none"
+                style={{ minWidth: '400px', fontSize: '18px' }}
+              >
+                <div className="absolute inset-0 bg-red-700 rounded-2xl opacity-0 group-hover:opacity-20 transition-opacity"></div>
+                {isLoadingInterviews ? (
+                  <>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-4 border-white mr-4"></div>
+                    <span className="relative z-10">Chargement...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-8 h-8 mr-4 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    <span className="relative z-10">🗑️ SUPPRIMER TOUS LES ENTRETIENS</span>
+                  </>
+                )}
+              </button>
+            </div>
+            
+            <div className="mt-6 p-4 bg-red-100 border border-red-300 rounded-lg">
+              <p className="text-sm text-red-800 font-medium">
+                ⚠️ Cette action supprimera définitivement tous les entretiens en attente et en cours
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* Full Queue Modal */}
       {showQueueModal && selectedQueue && (
@@ -495,6 +588,120 @@ export default function AdminDashboard() {
         </div>
       )}
 
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowDeleteModal(false);
+            }
+          }}
+        >
+          <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden border border-white/20 transform transition-all duration-300 scale-100">
+            <div className="flex justify-between items-center p-6 border-b border-gray-200/50 bg-gradient-to-r from-red-50/50 to-red-100/50">
+              <div>
+                <h2 className="text-xl sm:text-2xl font-bold text-red-800">
+                  Confirmer la Suppression
+                </h2>
+                <p className="text-sm text-red-600 mt-1">
+                  Cette action supprimera définitivement tous les entretiens en cours
+                </p>
+              </div>
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="text-gray-600 hover:text-gray-800 transition-colors p-2 rounded-full hover:bg-gray-100/50"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto max-h-[70vh] bg-gradient-to-b from-white/50 to-gray-50/30">
+              <div className="mb-6">
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                  <div className="flex items-center">
+                    <svg className="w-5 h-5 text-red-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                    <h3 className="text-lg font-semibold text-red-800">Attention!</h3>
+                  </div>
+                  <p className="text-red-700 mt-2">
+                    Vous êtes sur le point de supprimer <strong>{currentInterviews.length} entretiens</strong> en cours.
+                    Cette action est irréversible et affectera tous les étudiants en attente ou en cours d'entretien.
+                  </p>
+                </div>
+
+                {currentInterviews.length > 0 && (
+                  <div className="mb-6">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-3">
+                      Entretiens qui seront supprimés:
+                    </h3>
+                    <div className="max-h-60 overflow-y-auto space-y-2">
+                      {currentInterviews.map((interview) => (
+                        <div key={interview.id} className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <p className="font-medium text-gray-900">{interview.studentName}</p>
+                              <p className="text-sm text-gray-600">{interview.studentEmail}</p>
+                              <p className="text-sm text-gray-500">
+                                {interview.companyName} - Salle {interview.room}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                                interview.status === 'in_progress' 
+                                  ? 'bg-yellow-100 text-yellow-800' 
+                                  : 'bg-blue-100 text-blue-800'
+                              }`}>
+                                {interview.status === 'in_progress' ? 'En cours' : 'En attente'}
+                              </span>
+                              <p className="text-xs text-gray-500 mt-1">
+                                Position: {interview.queuePosition}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => setShowDeleteModal(false)}
+                  disabled={isDeleting}
+                  className="px-6 py-3 bg-gray-500 hover:bg-gray-600 disabled:bg-gray-400 text-white font-semibold rounded-lg transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={confirmDeleteAllInterviews}
+                  disabled={isDeleting}
+                  className="px-6 py-3 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white font-semibold rounded-lg transition-colors flex items-center"
+                >
+                  {isDeleting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Suppression...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      Confirmer la Suppression
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
@@ -514,6 +721,7 @@ function OverviewTabContent({
   formatTime, 
   formatDate 
 }: any) {
+
   return (
     <div className="space-y-6">
       {/* Welcome Section */}
@@ -526,6 +734,7 @@ function OverviewTabContent({
             Vue d'ensemble du système en temps réel
           </p>
         </div>
+        
       </div>
 
       {/* Top Statistics */}
@@ -808,6 +1017,120 @@ function OverviewTabContent({
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowDeleteModal(false);
+            }
+          }}
+        >
+          <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden border border-white/20 transform transition-all duration-300 scale-100">
+            <div className="flex justify-between items-center p-6 border-b border-gray-200/50 bg-gradient-to-r from-red-50/50 to-red-100/50">
+              <div>
+                <h2 className="text-xl sm:text-2xl font-bold text-red-800">
+                  Confirmer la Suppression
+                </h2>
+                <p className="text-sm text-red-600 mt-1">
+                  Cette action supprimera définitivement tous les entretiens en cours
+                </p>
+              </div>
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="text-gray-600 hover:text-gray-800 transition-colors p-2 rounded-full hover:bg-gray-100/50"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto max-h-[70vh] bg-gradient-to-b from-white/50 to-gray-50/30">
+              <div className="mb-6">
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                  <div className="flex items-center">
+                    <svg className="w-5 h-5 text-red-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                    <h3 className="text-lg font-semibold text-red-800">Attention!</h3>
+                  </div>
+                  <p className="text-red-700 mt-2">
+                    Vous êtes sur le point de supprimer <strong>{currentInterviews.length} entretiens</strong> en cours.
+                    Cette action est irréversible et affectera tous les étudiants en attente ou en cours d'entretien.
+                  </p>
+                </div>
+
+                {currentInterviews.length > 0 && (
+                  <div className="mb-6">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-3">
+                      Entretiens qui seront supprimés:
+                    </h3>
+                    <div className="max-h-60 overflow-y-auto space-y-2">
+                      {currentInterviews.map((interview) => (
+                        <div key={interview.id} className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <p className="font-medium text-gray-900">{interview.studentName}</p>
+                              <p className="text-sm text-gray-600">{interview.studentEmail}</p>
+                              <p className="text-sm text-gray-500">
+                                {interview.companyName} - Salle {interview.room}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                                interview.status === 'in_progress' 
+                                  ? 'bg-yellow-100 text-yellow-800' 
+                                  : 'bg-blue-100 text-blue-800'
+                              }`}>
+                                {interview.status === 'in_progress' ? 'En cours' : 'En attente'}
+                              </span>
+                              <p className="text-xs text-gray-500 mt-1">
+                                Position: {interview.queuePosition}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => setShowDeleteModal(false)}
+                  disabled={isDeleting}
+                  className="px-6 py-3 bg-gray-500 hover:bg-gray-600 disabled:bg-gray-400 text-white font-semibold rounded-lg transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={confirmDeleteAllInterviews}
+                  disabled={isDeleting}
+                  className="px-6 py-3 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white font-semibold rounded-lg transition-colors flex items-center"
+                >
+                  {isDeleting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Suppression...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      Confirmer la Suppression
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -858,8 +1181,82 @@ function CommitteeTabContent() {
 
 // System Tab Component
 function SystemTabContent({ queues, queuesLoading }: any) {
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [currentInterviews, setCurrentInterviews] = useState<any[]>([]);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isLoadingInterviews, setIsLoadingInterviews] = useState(false);
+
+  const handleDeleteAllInterviews = async () => {
+    setIsLoadingInterviews(true);
+    try {
+      const response = await fetch('/api/admin/interviews/delete-all');
+      if (!response.ok) throw new Error('Failed to fetch interviews');
+      const data = await response.json();
+      setCurrentInterviews(data.currentInterviews || []);
+      setShowDeleteModal(true);
+    } catch (error) {
+      console.error('Error fetching current interviews:', error);
+      toast.error('Erreur lors du chargement des entretiens');
+    } finally {
+      setIsLoadingInterviews(false);
+    }
+  };
+
+  const confirmDeleteAllInterviews = async () => {
+    setIsDeleting(true);
+    try {
+      const response = await fetch('/api/admin/interviews/delete-all', {
+        method: 'DELETE'
+      });
+      
+      if (!response.ok) throw new Error('Failed to delete interviews');
+      
+      const data = await response.json();
+      toast.success(data.message);
+      setShowDeleteModal(false);
+      setCurrentInterviews([]);
+      
+      // Refresh the page to update stats
+      window.location.reload();
+    } catch (error) {
+      console.error('Error deleting interviews:', error);
+      toast.error('Erreur lors de la suppression des entretiens');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
+      {/* System Management Actions */}
+      <div className="bg-white/70 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 p-4 sm:p-6">
+        <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-4">Actions Système</h2>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <button
+            onClick={handleDeleteAllInterviews}
+            disabled={isLoadingInterviews}
+            className="flex items-center justify-center px-4 py-3 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white font-semibold rounded-lg transition-colors"
+            style={{ minHeight: '48px' }}
+          >
+            {isLoadingInterviews ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Chargement...
+              </>
+            ) : (
+              <>
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                Supprimer Tous les Entretiens
+              </>
+            )}
+          </button>
+          
+        </div>
+      </div>
+
       {/* Room Status Overview */}
       <div className="bg-white/70 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 p-4 sm:p-6">
         <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-4">Statut des Salles</h2>
@@ -875,6 +1272,119 @@ function SystemTabContent({ queues, queuesLoading }: any) {
         </div>
       </div>
 
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowDeleteModal(false);
+            }
+          }}
+        >
+          <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden border border-white/20 transform transition-all duration-300 scale-100">
+            <div className="flex justify-between items-center p-6 border-b border-gray-200/50 bg-gradient-to-r from-red-50/50 to-red-100/50">
+              <div>
+                <h2 className="text-xl sm:text-2xl font-bold text-red-800">
+                  Confirmer la Suppression
+                </h2>
+                <p className="text-sm text-red-600 mt-1">
+                  Cette action supprimera définitivement tous les entretiens en cours
+                </p>
+              </div>
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="text-gray-600 hover:text-gray-800 transition-colors p-2 rounded-full hover:bg-gray-100/50"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto max-h-[70vh] bg-gradient-to-b from-white/50 to-gray-50/30">
+              <div className="mb-6">
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                  <div className="flex items-center">
+                    <svg className="w-5 h-5 text-red-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                    <h3 className="text-lg font-semibold text-red-800">Attention!</h3>
+                  </div>
+                  <p className="text-red-700 mt-2">
+                    Vous êtes sur le point de supprimer <strong>{currentInterviews.length} entretiens</strong> en cours.
+                    Cette action est irréversible et affectera tous les étudiants en attente ou en cours d'entretien.
+                  </p>
+                </div>
+
+                {currentInterviews.length > 0 && (
+                  <div className="mb-6">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-3">
+                      Entretiens qui seront supprimés:
+                    </h3>
+                    <div className="max-h-60 overflow-y-auto space-y-2">
+                      {currentInterviews.map((interview) => (
+                        <div key={interview.id} className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <p className="font-medium text-gray-900">{interview.studentName}</p>
+                              <p className="text-sm text-gray-600">{interview.studentEmail}</p>
+                              <p className="text-sm text-gray-500">
+                                {interview.companyName} - Salle {interview.room}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                                interview.status === 'in_progress' 
+                                  ? 'bg-yellow-100 text-yellow-800' 
+                                  : 'bg-blue-100 text-blue-800'
+                              }`}>
+                                {interview.status === 'in_progress' ? 'En cours' : 'En attente'}
+                              </span>
+                              <p className="text-xs text-gray-500 mt-1">
+                                Position: {interview.queuePosition}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => setShowDeleteModal(false)}
+                  disabled={isDeleting}
+                  className="px-6 py-3 bg-gray-500 hover:bg-gray-600 disabled:bg-gray-400 text-white font-semibold rounded-lg transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={confirmDeleteAllInterviews}
+                  disabled={isDeleting}
+                  className="px-6 py-3 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white font-semibold rounded-lg transition-colors flex items-center"
+                >
+                  {isDeleting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Suppression...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      Confirmer la Suppression
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
