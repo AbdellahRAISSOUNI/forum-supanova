@@ -8,7 +8,16 @@
     "start": "next start",
     "lint": "eslint",
     "seed:admin": "tsx scripts/create-admin.ts",
-    "create-indexes": "tsx scripts/create-indexes.ts"
+    "create-indexes": "tsx scripts/create-indexes.ts",
+    "load-test": "tsx scripts/load-test.ts",
+    "test-performance": "tsx scripts/test-performance.ts",
+    "setup-migration": "tsx scripts/setup-migration.ts",
+    "migrate-db": "tsx scripts/mongodb-migration.ts",
+    "simple-migrate": "tsx scripts/simple-migration.ts",
+    "direct-migrate": "tsx scripts/direct-migration.ts",
+    "native-migrate": "tsx scripts/native-migration.ts",
+    "find-data": "tsx scripts/find-data.ts",
+    "verify-migration": "tsx scripts/verify-migration.ts"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
@@ -20,6 +29,7 @@
     "mongoose": "^8.18.3",
     "next": "15.5.4",
     "next-auth": "^4.24.11",
+    "node-fetch": "^2.7.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-hook-form": "^7.63.0",
@@ -30,6 +40,7 @@
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/node-fetch": "^2.6.11",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "dotenv": "^17.2.3",

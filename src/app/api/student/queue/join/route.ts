@@ -4,6 +4,8 @@ import { authOptions } from '@/lib/auth';
 import { z } from 'zod';
 import { joinQueue } from '@/lib/services/queueService';
 import { handleError } from '@/lib/errors/QueueErrors';
+import { withRateLimit, RATE_LIMITS } from '@/lib/rateLimiter';
+import { withCircuitBreaker } from '@/lib/circuitBreaker';
 
 // Zod schema for join queue validation
 const joinQueueSchema = z.object({
@@ -25,6 +27,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Accès réservé aux étudiants' }, { status: 403 });
     }
 
+    // Rate limiting for queue operations
+    const rateLimitCheck = withRateLimit(RATE_LIMITS.queue, () => session.user.id);
+    const rateLimitResult = rateLimitCheck(request);
+    
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json(
+        { 
+          error: 'Trop de tentatives. Veuillez attendre avant de réessayer.',
+          retryAfter: rateLimitResult.retryAfter 
+        }, 
+        { 
+          status: 429,
+          headers: {
+            'Retry-After': rateLimitResult.retryAfter?.toString() || '60',
+            'X-RateLimit-Limit': '20',
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': new Date(rateLimitResult.resetTime).toISOString()
+          }
+        }
+      );
+    }
+
     const body = await request.json();
 
     // Validate the request body
@@ -43,8 +67,14 @@ export async function POST(request: NextRequest) {
 
     const { companyId, opportunityType } = validationResult.data;
 
+    // Use circuit breaker for queue operations
+    const joinQueueWithCircuitBreaker = withCircuitBreaker(
+      joinQueue,
+      `queue-join-${session.user.id}`
+    );
+
     // Join the queue
-    const result = await joinQueue(session.user.id, companyId, opportunityType);
+    const result = await joinQueueWithCircuitBreaker(session.user.id, companyId, opportunityType);
 
     if (result.success) {
       return NextResponse.json(

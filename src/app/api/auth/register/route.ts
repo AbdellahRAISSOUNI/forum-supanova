@@ -4,6 +4,7 @@ import User from '@/lib/models/User';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { cache, CACHE_KEYS } from '@/lib/cache';
+import { withRateLimit, RATE_LIMITS } from '@/lib/rateLimiter';
 
 const registerSchema = z.object({
   firstName: z.string().min(1, 'Le prénom est requis'),
@@ -24,6 +25,28 @@ const registerSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting for registration (very strict)
+    const rateLimitCheck = withRateLimit(RATE_LIMITS.registration);
+    const rateLimitResult = rateLimitCheck(request);
+    
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json(
+        { 
+          error: 'Trop de tentatives d\'inscription. Veuillez attendre avant de réessayer.',
+          retryAfter: rateLimitResult.retryAfter 
+        }, 
+        { 
+          status: 429,
+          headers: {
+            'Retry-After': rateLimitResult.retryAfter?.toString() || '900',
+            'X-RateLimit-Limit': '3',
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': new Date(rateLimitResult.resetTime).toISOString()
+          }
+        }
+      );
+    }
+
     const body = await request.json();
 
     console.log('Received registration data:', body);

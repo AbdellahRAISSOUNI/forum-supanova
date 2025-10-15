@@ -18,7 +18,8 @@ export async function GET() {
 
     const queueData = await getQueueForRoom(session.user.assignedRoom);
 
-    return NextResponse.json({ queueData }, { status: 200 });
+    // If no active company for this room, return 200 with null to let UI show empty state
+    return NextResponse.json({ queueData: queueData ?? null }, { status: 200 });
   } catch (error) {
     console.error('Error fetching queue for room:', error);
     return NextResponse.json({ error: 'Erreur interne du serveur' }, { status: 500 });

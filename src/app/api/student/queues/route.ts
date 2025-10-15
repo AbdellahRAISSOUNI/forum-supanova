@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { getStudentQueues } from '@/lib/services/queueService';
+import { getStudentQueuesOptimized } from '@/lib/services/optimizedQueueService';
+import { withRateLimit, RATE_LIMITS } from '@/lib/rateLimiter';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions);
     
@@ -15,10 +16,40 @@ export async function GET() {
       return NextResponse.json({ error: 'Accès réservé aux étudiants' }, { status: 403 });
     }
 
-    // Get student's active queues
-    const queues = await getStudentQueues(session.user.id);
+    // Rate limiting for queue retrieval
+    const rateLimitCheck = withRateLimit(RATE_LIMITS.queue, () => session.user.id);
+    const rateLimitResult = rateLimitCheck(request);
+    
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json(
+        { 
+          error: 'Trop de requêtes. Veuillez attendre avant de réessayer.',
+          retryAfter: rateLimitResult.retryAfter 
+        }, 
+        { 
+          status: 429,
+          headers: {
+            'Retry-After': rateLimitResult.retryAfter?.toString() || '60',
+            'X-RateLimit-Limit': '20',
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': new Date(rateLimitResult.resetTime).toISOString()
+          }
+        }
+      );
+    }
 
-    return NextResponse.json({ queues }, { status: 200 });
+    // Get student's active queues (optimized)
+    const queues = await getStudentQueuesOptimized(session.user.id);
+
+    return NextResponse.json({ queues }, { 
+      status: 200,
+      headers: {
+        'Cache-Control': 'private, max-age=10', // Cache for 10 seconds
+        'X-RateLimit-Limit': '20',
+        'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+        'X-RateLimit-Reset': new Date(rateLimitResult.resetTime).toISOString()
+      }
+    });
 
   } catch (error) {
     console.error('Error fetching student queues:', error);

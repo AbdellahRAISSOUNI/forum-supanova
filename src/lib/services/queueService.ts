@@ -562,14 +562,15 @@ export async function getQueueForRoom(room: string): Promise<{
   nextUp: any;
   waitingQueue: any[];
   totalWaiting: number;
-}> {
+} | null> {
   try {
     await connectDB();
 
     // Get company for this room
     const company = await Company.findOne({ room, isActive: true }).select('name room estimatedInterviewDuration imageId imageUrl');
     if (!company) {
-      throw new Error('Aucune entreprise trouvée pour cette salle');
+      // No active company for this room: return null so callers can render an empty state
+      return null;
     }
 
     // Get current in-progress interview
